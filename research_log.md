@@ -54,3 +54,14 @@
 - Result: The repository now has a direct Colab entry point for GPU runs
 - Open issue: None
 - Next step: Commit and push the notebook so it can be opened from Colab
+
+## 2026-04-21
+
+- Stage: poisson-optimizer
+- PDE: Poisson
+- Problem setting: Added optional Adam-to-L-BFGS training for the rectangular Poisson baseline
+- Methods or changes: Extended train_poisson_pinn.py with optional L-BFGS steps after Adam and documented the new flags in README
+- What was done: Implemented a two-stage optimizer path without changing the default Adam-only baseline
+- Result: The workspace can now compare Adam-only training against Adam->L-BFGS refinement under the same Poisson setup
+- Open issue: None
+- Next step: Run a Colab experiment with --lbfgs-steps 200 and compare L2 error and runtime against the current Adam-only baseline

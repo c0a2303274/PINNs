@@ -19,8 +19,16 @@ This directory is the working repository for the staged PINNs thesis workflow.
 
 ## Local run
 
+Adam only:
+
 ```powershell
 python .\train_poisson_pinn.py --epochs 1000 --n-interior 1024 --n-boundary 256 --output-dir .\outputs\poisson_baseline_1k
+```
+
+Adam followed by L-BFGS:
+
+```powershell
+python .\train_poisson_pinn.py --epochs 1000 --n-interior 1024 --n-boundary 256 --lbfgs-steps 200 --output-dir .\outputs\poisson_adam_lbfgs
 ```
 
 ## Log a run
@@ -65,6 +73,12 @@ If you want to start from an empty Colab notebook, use:
 %cd PINNs
 !pip install -r requirements.txt
 !python train_poisson_pinn.py --epochs 1000 --n-interior 1024 --n-boundary 256 --output-dir outputs/poisson_baseline_1k
+```
+
+For an Adam to L-BFGS run on Colab:
+
+```python
+!python train_poisson_pinn.py --epochs 1000 --n-interior 1024 --n-boundary 256 --lbfgs-steps 200 --output-dir outputs/poisson_adam_lbfgs
 ```
 
 ### Save outputs from Colab

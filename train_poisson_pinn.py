@@ -76,6 +76,24 @@ def compute_losses(
     return total, loss_pde, loss_bc
 
 
+def append_history(
+    history: dict[str, list[float]],
+    total: torch.Tensor,
+    loss_pde: torch.Tensor,
+    loss_bc: torch.Tensor,
+) -> None:
+    history["total"].append(float(total.item()))
+    history["pde"].append(float(loss_pde.item()))
+    history["bc"].append(float(loss_bc.item()))
+
+
+def log_progress(label: str, step: int, total: torch.Tensor, loss_pde: torch.Tensor, loss_bc: torch.Tensor) -> None:
+    print(
+        f"{label}={step:5d} total={total.item():.3e} "
+        f"pde={loss_pde.item():.3e} bc={loss_bc.item():.3e}"
+    )
+
+
 def evaluate(model: MLP, device: torch.device, grid_size: int = 101) -> tuple[float, np.ndarray, np.ndarray, np.ndarray]:
     grid = torch.linspace(-1.0, 1.0, grid_size, device=device)
     xx, yy = torch.meshgrid(grid, grid, indexing="xy")
@@ -143,6 +161,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hidden-layers", type=int, default=4)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--lambda-bc", type=float, default=1.0)
+    parser.add_argument("--lbfgs-steps", type=int, default=0)
+    parser.add_argument("--lbfgs-lr", type=float, default=1.0)
+    parser.add_argument("--lbfgs-history-size", type=int, default=100)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/poisson_baseline"))
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
@@ -175,16 +196,44 @@ def main() -> None:
         )
         total.backward()
         optimizer.step()
-
-        history["total"].append(float(total.item()))
-        history["pde"].append(float(loss_pde.item()))
-        history["bc"].append(float(loss_bc.item()))
+        append_history(history, total, loss_pde, loss_bc)
 
         if epoch % args.print_every == 0 or epoch == 1 or epoch == args.epochs:
-            print(
-                f"epoch={epoch:5d} total={total.item():.3e} "
-                f"pde={loss_pde.item():.3e} bc={loss_bc.item():.3e}"
-            )
+            log_progress("epoch", epoch, total, loss_pde, loss_bc)
+
+    if args.lbfgs_steps > 0:
+        x_f_fixed, y_f_fixed = sample_interior(args.n_interior, device)
+        x_bc_fixed, y_bc_fixed = sample_boundary(args.n_boundary, device)
+        lbfgs = torch.optim.LBFGS(
+            model.parameters(),
+            lr=args.lbfgs_lr,
+            max_iter=args.lbfgs_steps,
+            history_size=args.lbfgs_history_size,
+            line_search_fn="strong_wolfe",
+        )
+        lbfgs_state = {"step": 0}
+
+        def closure() -> torch.Tensor:
+            lbfgs.zero_grad(set_to_none=True)
+            residual = pde_residual(model, x_f_fixed, y_f_fixed)
+            loss_pde = torch.mean(residual**2)
+
+            coords_bc = torch.cat([x_bc_fixed, y_bc_fixed], dim=1)
+            u_bc = model(coords_bc)
+            target_bc = boundary_value(x_bc_fixed, y_bc_fixed)
+            loss_bc = torch.mean((u_bc - target_bc) ** 2)
+            total = loss_pde + args.lambda_bc * loss_bc
+            total.backward()
+
+            append_history(history, total, loss_pde, loss_bc)
+            lbfgs_state["step"] += 1
+
+            if lbfgs_state["step"] == 1 or lbfgs_state["step"] % args.print_every == 0 or lbfgs_state["step"] == args.lbfgs_steps:
+                log_progress("lbfgs", lbfgs_state["step"], total, loss_pde, loss_bc)
+
+            return total
+
+        lbfgs.step(closure)
 
     elapsed = time.time() - start_time
     l2_error, _, _, _ = evaluate(model, device=device)
@@ -203,6 +252,9 @@ def main() -> None:
                 "hidden_layers": args.hidden_layers,
                 "lr": args.lr,
                 "lambda_bc": args.lambda_bc,
+                "lbfgs_steps": args.lbfgs_steps,
+                "lbfgs_lr": args.lbfgs_lr,
+                "lbfgs_history_size": args.lbfgs_history_size,
                 "seed": args.seed,
                 "device": str(device),
                 "runtime_sec": elapsed,
