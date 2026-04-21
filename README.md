@@ -40,10 +40,42 @@ Use this repository as the source of truth.
 
 ## Colab quick start
 
-After pushing to GitHub, use a Colab cell like this:
+### Open from GitHub
+
+1. Go to `https://colab.research.google.com/`
+2. Open the `GitHub` tab
+3. Paste `https://github.com/c0a2303274/PINNs`
+4. Select `poisson_baseline_colab.ipynb`
+5. After the notebook opens, switch runtime to GPU:
+   `Runtime` -> `Change runtime type` -> `T4 GPU` or another GPU
+6. Run the cells from top to bottom
+
+### Direct notebook link
+
+After GitHub finishes indexing the notebook, this URL should open it directly in Colab:
+
+`https://colab.research.google.com/github/c0a2303274/PINNs/blob/main/poisson_baseline_colab.ipynb`
+
+### Manual Colab cells
+
+If you want to start from an empty Colab notebook, use:
 
 ```python
-!git clone <YOUR_REPO_URL>
-%cd <YOUR_REPO_NAME>
+!git clone https://github.com/c0a2303274/PINNs.git
+%cd PINNs
+!pip install -r requirements.txt
 !python train_poisson_pinn.py --epochs 1000 --n-interior 1024 --n-boundary 256 --output-dir outputs/poisson_baseline_1k
+```
+
+### Save outputs from Colab
+
+The current notebook writes results under `outputs/`. If you need to keep outputs after the Colab session ends, either:
+
+1. Download the files manually from the Colab file pane
+2. Mount Google Drive and copy `outputs/` there
+
+### Log runs after Colab execution
+
+```python
+!python append_research_log.py --stage poisson-baseline --pde Poisson --setting "Omega=[-1,1]^2, epochs=1000, n_interior=1024, n_boundary=256" --changes "Ran baseline on Colab" --done "Completed one GPU run" --result "See outputs/poisson_baseline_1k/metrics.json" --next-step "Compare runtime and error with local run"
 ```

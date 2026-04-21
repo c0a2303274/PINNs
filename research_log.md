@@ -43,3 +43,14 @@
 - Result: Repository is ready to be connected to GitHub and used as the single source of truth
 - Open issue: No remote is configured yet
 - Next step: Create a GitHub repository, add origin, and push main
+
+## 2026-04-21
+
+- Stage: colab-setup
+- PDE: Poisson
+- Problem setting: Added a Colab notebook entry point for the Poisson baseline
+- Methods or changes: Created poisson_baseline_colab.ipynb and updated README with Colab connection steps
+- What was done: Prepared a notebook-based Colab workflow linked to the GitHub repository
+- Result: The repository now has a direct Colab entry point for GPU runs
+- Open issue: None
+- Next step: Commit and push the notebook so it can be opened from Colab
