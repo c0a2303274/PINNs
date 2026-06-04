@@ -77,3 +77,15 @@
 - W&B run: None
 - Open issue: Full 3-seed experiment still needs to be run with the target epochs and sample counts
 - Next step: Run python .\run_poisson_comparison.py --seeds 0,1,2 --epochs 1000 --n-interior 1024 --n-boundary 256 --lbfgs-steps 200
+
+## 2026-06-04
+
+- Stage: poisson-baseline
+- PDE: Poisson
+- Problem setting: Omega=[-1,1]^2, epochs=1000, n_interior=1024, n_boundary=256, hidden_dim=100, hidden_layers=4, seeds=0,1,2
+- Methods or changes: Ran Adam vs Adam->L-BFGS optimizer comparison on RTX 5060 Ti 8GB desktop
+- What was done: Collected summary.md and summary.csv under results/poisson_optimizer_comparison
+- Result: Adam mean L2 relative error was about 1.06e-1; Adam->L-BFGS mean L2 relative error was about 3.84e-2. L-BFGS improved all seeds but increased runtime from about 21.3 sec to 33.2 sec on average.
+- W&B run: None
+- Open issue: Only 3 seeds were tested; this is sufficient for the next progress report but not a full stability claim.
+- Next step: Use this as the Poisson baseline result and start defining the 1D wave equation standard PINNs setup
