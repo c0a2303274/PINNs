@@ -19,6 +19,7 @@ def main() -> None:
     parser.add_argument("--result", required=True)
     parser.add_argument("--open-issue", default="")
     parser.add_argument("--next-step", required=True)
+    parser.add_argument("--wandb-run", default="", help="optional W&B run path, URL, or run id")
     args = parser.parse_args()
 
     log_path = Path(args.log)
@@ -34,6 +35,7 @@ def main() -> None:
             f"- Methods or changes: {args.changes}",
             f"- What was done: {args.done}",
             f"- Result: {args.result}",
+            f"- W&B run: {args.wandb_run or 'None'}",
             f"- Open issue: {args.open_issue or 'None'}",
             f"- Next step: {args.next_step}",
             "",

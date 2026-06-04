@@ -19,6 +19,8 @@ This directory is the working repository for the staged PINNs thesis workflow.
 
 ## Local run
 
+Default W&B behavior is offline logging. That keeps runs local unless you later sync them.
+
 Adam only:
 
 ```powershell
@@ -31,10 +33,53 @@ Adam followed by L-BFGS:
 python .\train_poisson_pinn.py --epochs 1000 --n-interior 1024 --n-boundary 256 --lbfgs-steps 200 --output-dir .\outputs\poisson_adam_lbfgs
 ```
 
+Run the current optimizer comparison plan:
+
+```powershell
+python .\run_poisson_comparison.py --seeds 0,1,2 --epochs 1000 --n-interior 1024 --n-boundary 256 --lbfgs-steps 200
+```
+
+This writes `outputs/poisson_optimizer_comparison/summary.md` and `summary.csv`.
+
+Disable W&B completely:
+
+```powershell
+python .\train_poisson_pinn.py --wandb-mode disabled
+```
+
+Run online with an explicit group and tags:
+
+```powershell
+python .\train_poisson_pinn.py --wandb-mode online --wandb-group poisson-adam-lbfgs --wandb-tags "poisson,baseline,lbfgs"
+```
+
+## W&B usage
+
+Install dependencies:
+
+```powershell
+pip install -r requirements.txt
+```
+
+Offline-first workflow:
+
+```powershell
+$env:WANDB_MODE="offline"
+python .\train_poisson_pinn.py
+wandb sync .\outputs\poisson_baseline\wandb\latest-run
+```
+
+Each run records:
+
+- config for PDE, optimizer, network, seed, and sampling counts
+- training metrics for total, PDE, and boundary losses
+- final `l2_relative_error` and runtime
+- artifacts for `model.pt`, `metrics.json`, and the saved plots
+
 ## Log a run
 
 ```powershell
-python .\append_research_log.py --stage poisson-baseline --pde Poisson --setting "Omega=[-1,1]^2, Dirichlet boundary" --changes "Updated training condition" --done "Ran one experiment" --result "Recorded metrics under outputs" --next-step "Tune the next variable"
+python .\append_research_log.py --stage poisson-baseline --pde Poisson --setting "Omega=[-1,1]^2, Dirichlet boundary" --changes "Updated training condition" --done "Ran one experiment" --result "Recorded metrics under outputs" --wandb-run "pinns-thesis/poisson-baseline/abc123" --next-step "Tune the next variable"
 ```
 
 ## Git workflow
@@ -91,5 +136,5 @@ The current notebook writes results under `outputs/`. If you need to keep output
 ### Log runs after Colab execution
 
 ```python
-!python append_research_log.py --stage poisson-baseline --pde Poisson --setting "Omega=[-1,1]^2, epochs=1000, n_interior=1024, n_boundary=256" --changes "Ran baseline on Colab" --done "Completed one GPU run" --result "See outputs/poisson_baseline_1k/metrics.json" --next-step "Compare runtime and error with local run"
+!python append_research_log.py --stage poisson-baseline --pde Poisson --setting "Omega=[-1,1]^2, epochs=1000, n_interior=1024, n_boundary=256" --changes "Ran baseline on Colab" --done "Completed one GPU run" --result "See outputs/poisson_baseline_1k/metrics.json" --wandb-run "add-run-path-or-url-here" --next-step "Compare runtime and error with local run"
 ```

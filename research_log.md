@@ -65,3 +65,15 @@
 - Result: The workspace can now compare Adam-only training against Adam->L-BFGS refinement under the same Poisson setup
 - Open issue: None
 - Next step: Run a Colab experiment with --lbfgs-steps 200 and compare L2 error and runtime against the current Adam-only baseline
+
+## 2026-06-04
+
+- Stage: poisson-baseline
+- PDE: Poisson
+- Problem setting: Omega=[-1,1]^2, optimizer comparison runner for Adam vs Adam->L-BFGS
+- Methods or changes: Added run_poisson_comparison.py and final loss fields in metrics.json
+- What was done: Verified the comparison runner with a 1-seed smoke test and generated summary.md/summary.csv
+- Result: The workspace can now run the planned 3-seed optimizer comparison and produce a compact result table
+- W&B run: None
+- Open issue: Full 3-seed experiment still needs to be run with the target epochs and sample counts
+- Next step: Run python .\run_poisson_comparison.py --seeds 0,1,2 --epochs 1000 --n-interior 1024 --n-boundary 256 --lbfgs-steps 200
