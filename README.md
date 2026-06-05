@@ -50,6 +50,14 @@ python .\run_poisson_comparison.py --seeds 0,1,2 --epochs 1000000 --n-interior 1
 `--total-runtime-sec 3600` is split across the six runs, so each Adam or Adam->L-BFGS run gets about 10 minutes.
 For Adam->L-BFGS timed runs, the default is to spend half of the run budget on Adam and leave the remaining half for L-BFGS.
 
+Run a higher-accuracy four-hour comparison on a large GPU:
+
+```powershell
+python .\run_poisson_comparison.py --seeds 0,1,2 --epochs 1000000 --n-interior 4096 --n-boundary 1024 --hidden-dim 128 --hidden-layers 5 --lr 1e-3 --lambda-bc 1.0 --lbfgs-steps 200000 --total-runtime-sec 14400 --adam-runtime-fraction 0.5 --dtype float64 --eval-grid-size 201 --wandb-mode disabled --output-root .\outputs\poisson_optimizer_comparison_4h
+```
+
+`float64` and the larger collocation set are intended for the Ada 6000 workstation, not lightweight local runs.
+
 Disable W&B completely:
 
 ```powershell

@@ -104,6 +104,14 @@ def runtime_exceeded(start_time: float, max_runtime_sec: float | None) -> bool:
     return max_runtime_sec is not None and (time.time() - start_time) >= max_runtime_sec
 
 
+def parse_dtype(raw_dtype: str) -> torch.dtype:
+    if raw_dtype == "float32":
+        return torch.float32
+    if raw_dtype == "float64":
+        return torch.float64
+    raise ValueError(f"unsupported dtype: {raw_dtype}")
+
+
 def parse_tags(raw_tags: str) -> list[str]:
     return [tag.strip() for tag in raw_tags.split(",") if tag.strip()]
 
@@ -142,6 +150,8 @@ def init_wandb(args: argparse.Namespace, device: torch.device) -> Any:
         "lbfgs_history_size": args.lbfgs_history_size,
         "seed": args.seed,
         "device": str(device),
+        "dtype": args.dtype,
+        "eval_grid_size": args.eval_grid_size,
         "feature_map": "none",
         "gfpinns_enabled": False,
     }
@@ -259,6 +269,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/poisson_baseline"))
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--dtype", choices=["float32", "float64"], default="float32")
+    parser.add_argument("--eval-grid-size", type=int, default=101)
     parser.add_argument("--print-every", type=int, default=500)
     parser.add_argument("--wandb-mode", choices=["online", "offline", "disabled"], default=os.getenv("WANDB_MODE", "offline"))
     parser.add_argument("--wandb-project", type=str, default="pinns-thesis")
@@ -273,10 +285,12 @@ def main() -> None:
     set_seed(args.seed)
 
     device = torch.device(args.device)
+    dtype = parse_dtype(args.dtype)
+    torch.set_default_dtype(dtype)
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = MLP(hidden_dim=args.hidden_dim, hidden_layers=args.hidden_layers).to(device)
+    model = MLP(hidden_dim=args.hidden_dim, hidden_layers=args.hidden_layers).to(device=device, dtype=dtype)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     run = init_wandb(args, device)
 
@@ -359,9 +373,9 @@ def main() -> None:
         device=device,
         lambda_bc=args.lambda_bc,
     )
-    l2_error, _, _, _ = evaluate(model, device=device)
+    l2_error, _, _, _ = evaluate(model, device=device, grid_size=args.eval_grid_size)
 
-    save_plots(model, output_dir, device, history)
+    save_plots(model, output_dir, device, history, grid_size=args.eval_grid_size)
 
     model_path = output_dir / "model.pt"
     metrics_path = output_dir / "metrics.json"
@@ -384,6 +398,8 @@ def main() -> None:
         "lbfgs_history_size": args.lbfgs_history_size,
         "seed": args.seed,
         "device": str(device),
+        "dtype": args.dtype,
+        "eval_grid_size": args.eval_grid_size,
         "runtime_sec": elapsed,
         "l2_relative_error": l2_error,
         "final_total_loss": float(final_total.item()),

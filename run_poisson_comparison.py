@@ -64,6 +64,10 @@ def run_one(args: argparse.Namespace, method_key: str, seed: int, script_path: P
         str(args.lambda_bc),
         "--seed",
         str(seed),
+        "--dtype",
+        args.dtype,
+        "--eval-grid-size",
+        str(args.eval_grid_size),
         "--output-dir",
         str(output_dir),
         "--print-every",
@@ -142,6 +146,8 @@ def write_markdown(results: list[dict[str, object]], path: Path, args: argparse.
         f"- hidden_layers: {args.hidden_layers}",
         f"- lr: {args.lr}",
         f"- lambda_bc: {args.lambda_bc}",
+        f"- dtype: {args.dtype}",
+        f"- eval_grid_size: {args.eval_grid_size}",
         f"- seeds: {', '.join(str(seed) for seed in parse_seeds(args.seeds))}",
         "",
         "| method | seed | L2 relative error | PDE loss | BC loss | runtime sec | epochs | lbfgs steps |",
@@ -179,6 +185,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lambda-bc", type=float, default=1.0)
     parser.add_argument("--lbfgs-steps", type=int, default=200)
     parser.add_argument("--device", default="auto", help="auto, cpu, cuda, or another torch device string")
+    parser.add_argument("--dtype", choices=["float32", "float64"], default="float32")
+    parser.add_argument("--eval-grid-size", type=int, default=101)
     parser.add_argument("--print-every", type=int, default=500)
     parser.add_argument("--wandb-mode", choices=["online", "offline", "disabled"], default="offline")
     parser.add_argument("--output-root", type=Path, default=Path("outputs/poisson_optimizer_comparison"))
