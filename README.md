@@ -41,6 +41,15 @@ python .\run_poisson_comparison.py --seeds 0,1,2 --epochs 1000 --n-interior 1024
 
 This writes `outputs/poisson_optimizer_comparison/summary.md` and `summary.csv`.
 
+Run the same comparison with an approximate one-hour total budget:
+
+```powershell
+python .\run_poisson_comparison.py --seeds 0,1,2 --epochs 1000000 --n-interior 1024 --n-boundary 256 --lbfgs-steps 100000 --total-runtime-sec 3600 --wandb-mode disabled --output-root .\outputs\poisson_optimizer_comparison_1h
+```
+
+`--total-runtime-sec 3600` is split across the six runs, so each Adam or Adam->L-BFGS run gets about 10 minutes.
+For Adam->L-BFGS timed runs, the default is to spend half of the run budget on Adam and leave the remaining half for L-BFGS.
+
 Disable W&B completely:
 
 ```powershell

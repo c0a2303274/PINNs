@@ -77,8 +77,13 @@ def run_one(args: argparse.Namespace, method_key: str, seed: int, script_path: P
         "--wandb-notes",
         f"{method['label']} Poisson optimizer comparison, seed={seed}",
     ]
+    if args.max_runtime_sec is not None:
+        command.extend(["--max-runtime-sec", str(args.max_runtime_sec)])
     if method_key == "adam_lbfgs":
         command.extend(["--lbfgs-steps", str(args.lbfgs_steps)])
+        if args.max_runtime_sec is not None:
+            adam_budget = args.max_runtime_sec * args.adam_runtime_fraction
+            command.extend(["--adam-max-runtime-sec", str(adam_budget)])
     if args.device != "auto":
         command.extend(["--device", args.device])
 
@@ -97,6 +102,8 @@ def load_result(metrics_path: Path, method: str, seed: int) -> dict[str, object]
         "final_pde_loss": metrics.get("final_pde_loss"),
         "final_bc_loss": metrics.get("final_bc_loss"),
         "runtime_sec": metrics.get("runtime_sec"),
+        "completed_epochs": metrics.get("completed_epochs"),
+        "completed_lbfgs_steps": metrics.get("completed_lbfgs_steps"),
         "output_dir": str(metrics_path.parent),
     }
 
@@ -112,6 +119,8 @@ def write_csv(results: list[dict[str, object]], path: Path) -> None:
                 "final_pde_loss",
                 "final_bc_loss",
                 "runtime_sec",
+                "completed_epochs",
+                "completed_lbfgs_steps",
                 "output_dir",
             ],
         )
@@ -126,6 +135,7 @@ def write_markdown(results: list[dict[str, object]], path: Path, args: argparse.
         "Fixed setting:",
         "",
         f"- epochs: {args.epochs}",
+        f"- max_runtime_sec per run: {args.max_runtime_sec if args.max_runtime_sec is not None else 'none'}",
         f"- n_interior: {args.n_interior}",
         f"- n_boundary: {args.n_boundary}",
         f"- hidden_dim: {args.hidden_dim}",
@@ -134,18 +144,20 @@ def write_markdown(results: list[dict[str, object]], path: Path, args: argparse.
         f"- lambda_bc: {args.lambda_bc}",
         f"- seeds: {', '.join(str(seed) for seed in parse_seeds(args.seeds))}",
         "",
-        "| method | seed | L2 relative error | PDE loss | BC loss | runtime sec |",
-        "|---|---:|---:|---:|---:|---:|",
+        "| method | seed | L2 relative error | PDE loss | BC loss | runtime sec | epochs | lbfgs steps |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for result in results:
         lines.append(
-            "| {method} | {seed} | {l2} | {pde} | {bc} | {runtime:.2f} |".format(
+            "| {method} | {seed} | {l2} | {pde} | {bc} | {runtime:.2f} | {epochs} | {lbfgs_steps} |".format(
                 method=result["method"],
                 seed=result["seed"],
                 l2=format_float(result["l2_relative_error"]),
                 pde=format_float(result["final_pde_loss"]),
                 bc=format_float(result["final_bc_loss"]),
                 runtime=float(result["runtime_sec"]),
+                epochs=result.get("completed_epochs") or "",
+                lbfgs_steps=result.get("completed_lbfgs_steps") or "",
             )
         )
     lines.append("")
@@ -156,6 +168,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seeds", default="0,1,2", help="comma-separated seed list")
     parser.add_argument("--epochs", type=int, default=1000)
+    parser.add_argument("--max-runtime-sec", type=float, default=None, help="per-run time budget passed to train_poisson_pinn.py")
+    parser.add_argument("--total-runtime-sec", type=float, default=None, help="split this total time budget evenly across all runs")
+    parser.add_argument("--adam-runtime-fraction", type=float, default=0.5, help="Adam phase share for timed Adam->L-BFGS runs")
     parser.add_argument("--n-interior", type=int, default=1024)
     parser.add_argument("--n-boundary", type=int, default=256)
     parser.add_argument("--hidden-dim", type=int, default=100)
@@ -175,6 +190,9 @@ def main() -> None:
     args = parse_args()
     script_path = Path(__file__).with_name("train_poisson_pinn.py")
     args.output_root.mkdir(parents=True, exist_ok=True)
+    if args.total_runtime_sec is not None:
+        run_count = len(parse_seeds(args.seeds)) * len(METHODS)
+        args.max_runtime_sec = args.total_runtime_sec / run_count
 
     results = []
     for seed in parse_seeds(args.seeds):

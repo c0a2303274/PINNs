@@ -15,6 +15,10 @@ from pinn_model import MLP
 from poisson_problem import boundary_value, exact_solution, pde_residual
 
 
+class TimeBudgetExceeded(Exception):
+    """Raised when a timed training run reaches its runtime budget."""
+
+
 def set_seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
@@ -96,6 +100,10 @@ def log_progress(label: str, step: int, total: torch.Tensor, loss_pde: torch.Ten
     )
 
 
+def runtime_exceeded(start_time: float, max_runtime_sec: float | None) -> bool:
+    return max_runtime_sec is not None and (time.time() - start_time) >= max_runtime_sec
+
+
 def parse_tags(raw_tags: str) -> list[str]:
     return [tag.strip() for tag in raw_tags.split(",") if tag.strip()]
 
@@ -123,6 +131,8 @@ def init_wandb(args: argparse.Namespace, device: torch.device) -> Any:
         "network_width": args.hidden_dim,
         "activation": "tanh",
         "epochs": args.epochs,
+        "max_runtime_sec": args.max_runtime_sec,
+        "adam_max_runtime_sec": args.adam_max_runtime_sec,
         "collocation_n": args.n_interior,
         "boundary_n": args.n_boundary,
         "lr": args.lr,
@@ -235,6 +245,8 @@ def save_plots(model: MLP, output_dir: Path, device: torch.device, history: dict
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a baseline PINN for the rectangular Poisson problem.")
     parser.add_argument("--epochs", type=int, default=5000)
+    parser.add_argument("--max-runtime-sec", type=float, default=None, help="stop training after this many seconds")
+    parser.add_argument("--adam-max-runtime-sec", type=float, default=None, help="stop the Adam phase after this many seconds")
     parser.add_argument("--n-interior", type=int, default=2048)
     parser.add_argument("--n-boundary", type=int, default=512)
     parser.add_argument("--hidden-dim", type=int, default=100)
@@ -270,8 +282,16 @@ def main() -> None:
 
     history = {"total": [], "pde": [], "bc": []}
     start_time = time.time()
+    completed_epochs = 0
 
     for epoch in range(1, args.epochs + 1):
+        if runtime_exceeded(start_time, args.max_runtime_sec):
+            print(f"stopping Adam phase at epoch={epoch - 1} due to max runtime")
+            break
+        if runtime_exceeded(start_time, args.adam_max_runtime_sec):
+            print(f"stopping Adam phase at epoch={epoch - 1} due to Adam runtime budget")
+            break
+
         epoch_start = time.time()
         optimizer.zero_grad(set_to_none=True)
         total, loss_pde, loss_bc = compute_losses(
@@ -284,6 +304,7 @@ def main() -> None:
         total.backward()
         optimizer.step()
         append_history(history, total, loss_pde, loss_bc)
+        completed_epochs = epoch
         log_wandb_metrics(run, epoch, total, loss_pde, loss_bc, epoch_sec=time.time() - epoch_start)
 
         if epoch % args.print_every == 0 or epoch == 1 or epoch == args.epochs:
@@ -302,6 +323,9 @@ def main() -> None:
         lbfgs_state = {"step": 0}
 
         def closure() -> torch.Tensor:
+            if runtime_exceeded(start_time, args.max_runtime_sec):
+                raise TimeBudgetExceeded
+
             lbfgs.zero_grad(set_to_none=True)
             residual = pde_residual(model, x_f_fixed, y_f_fixed)
             loss_pde = torch.mean(residual**2)
@@ -322,7 +346,10 @@ def main() -> None:
             log_wandb_metrics(run, args.epochs + lbfgs_state["step"], total, loss_pde, loss_bc)
             return total
 
-        lbfgs.step(closure)
+        try:
+            lbfgs.step(closure)
+        except TimeBudgetExceeded:
+            print(f"stopping L-BFGS phase at step={lbfgs_state['step']} due to max runtime")
 
     elapsed = time.time() - start_time
     final_total, final_loss_pde, final_loss_bc = compute_losses(
@@ -342,6 +369,9 @@ def main() -> None:
     metrics = {
         "problem": "Poisson on [-1,1]^2 with exact solution sin(pi x) sin(pi y)",
         "epochs": args.epochs,
+        "completed_epochs": completed_epochs,
+        "max_runtime_sec": args.max_runtime_sec,
+        "adam_max_runtime_sec": args.adam_max_runtime_sec,
         "n_interior": args.n_interior,
         "n_boundary": args.n_boundary,
         "hidden_dim": args.hidden_dim,
@@ -349,6 +379,7 @@ def main() -> None:
         "lr": args.lr,
         "lambda_bc": args.lambda_bc,
         "lbfgs_steps": args.lbfgs_steps,
+        "completed_lbfgs_steps": lbfgs_state["step"] if args.lbfgs_steps > 0 else 0,
         "lbfgs_lr": args.lbfgs_lr,
         "lbfgs_history_size": args.lbfgs_history_size,
         "seed": args.seed,
