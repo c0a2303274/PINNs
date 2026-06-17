@@ -58,6 +58,14 @@ python .\run_poisson_comparison.py --seeds 0,1,2 --epochs 1000000 --n-interior 4
 
 `float64` and the larger collocation set are intended for the Ada 6000 workstation, not lightweight local runs.
 
+Run a 12-hour Adam->L-BFGS ablation on the Ada 6000 workstation:
+
+```powershell
+python .\run_poisson_ablation.py --total-runtime-sec 43200 --output-root .\outputs\poisson_ablation_12h
+```
+
+This tests four focused settings with three seeds each: the current high-accuracy baseline, more collocation points, a wider network, and a lower Adam learning rate.
+
 Disable W&B completely:
 
 ```powershell
