@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 import math
 import os
@@ -251,6 +252,47 @@ def save_plots(model: MLP, output_dir: Path, device: torch.device, history: dict
     fig.savefig(output_dir / "training_losses.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
+    save_history_csv(history, output_dir / "history.csv")
+    save_smoothed_loss_plot(history, output_dir / "training_losses_smoothed.png")
+
+
+def save_history_csv(history: dict[str, list[float]], path: Path) -> None:
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["step", "total_loss", "pde_loss", "bc_loss"])
+        for step, (total, pde, bc) in enumerate(zip(history["total"], history["pde"], history["bc"]), start=1):
+            writer.writerow([step, total, pde, bc])
+
+
+def moving_average(values: list[float], window: int) -> np.ndarray:
+    array = np.asarray(values, dtype=float)
+    if len(array) == 0:
+        return array
+    window = max(1, min(window, len(array)))
+    kernel = np.ones(window) / window
+    return np.convolve(array, kernel, mode="valid")
+
+
+def save_smoothed_loss_plot(history: dict[str, list[float]], path: Path) -> None:
+    length = len(history["total"])
+    if length == 0:
+        return
+
+    window = max(1, min(length // 200, 500))
+    fig, ax = plt.subplots(figsize=(7, 4))
+    for key, label in [("total", "total"), ("pde", "pde"), ("bc", "bc")]:
+        smoothed = moving_average(history[key], window)
+        x = np.arange(window, window + len(smoothed))
+        ax.plot(x, smoothed, label=label)
+    ax.set_yscale("log")
+    ax.set_xlabel("step")
+    ax.set_ylabel("moving-average loss")
+    ax.legend()
+    ax.set_title(f"Training losses, moving average window={window}")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a baseline PINN for the rectangular Poisson problem.")
@@ -426,6 +468,8 @@ def main() -> None:
         run.log_artifact(str(metrics_path), name=f"{args.wandb_group}-metrics-seed{args.seed}", type="metrics")
         run.log_artifact(str(output_dir / "poisson_fields.png"), name=f"{args.wandb_group}-fields-seed{args.seed}", type="plot")
         run.log_artifact(str(output_dir / "training_losses.png"), name=f"{args.wandb_group}-losses-seed{args.seed}", type="plot")
+        run.log_artifact(str(output_dir / "training_losses_smoothed.png"), name=f"{args.wandb_group}-smoothed-losses-seed{args.seed}", type="plot")
+        run.log_artifact(str(output_dir / "history.csv"), name=f"{args.wandb_group}-history-seed{args.seed}", type="history")
         run.finish()
 
     print(f"finished in {elapsed:.2f} sec")
