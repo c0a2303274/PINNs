@@ -1,0 +1,50 @@
+# Nonlinear PDE next steps
+
+## Research storyline
+
+Poisson PINNs experiments are now treated as preliminary baseline work. They established the implementation, logging, evaluation, and optimizer-comparison workflow, but the tested settings plateaued around `1e-4` L2 relative error. The next phase moves to nonlinear PDEs and studies whether hard-constrained methods can reduce constraint error and improve stability.
+
+## First target PDE
+
+Use the 1D viscous Burgers equation as the first nonlinear PDE:
+
+```text
+u_t + u u_x = nu u_xx
+x in [-1, 1], t in [0, 1]
+u(x, 0) = -sin(pi x)
+u(-1, t) = u(1, t) = 0
+nu = 0.01 / pi
+```
+
+The first implementation uses a finite-difference reference solution for L2 relative error. In slides and reports, call this a numerical reference solution, not an analytic solution.
+
+## Baseline command
+
+Start with a short smoke run:
+
+```bash
+python train_burgers_pinn.py --epochs 100 --n-interior 256 --n-initial 64 --n-boundary 64 --wandb-mode disabled --output-dir outputs/burgers_smoke
+```
+
+Then run a first serious baseline:
+
+```bash
+python train_burgers_pinn.py --epochs 20000 --n-interior 4096 --n-initial 512 --n-boundary 512 --hidden-dim 128 --hidden-layers 5 --lr 0.001 --lbfgs-steps 5000 --seed 0 --wandb-mode offline --output-dir outputs/burgers_baseline_seed0
+```
+
+## Comparison plan
+
+| step | method | purpose | key metrics |
+|---|---|---|---|
+| 1 | standard PINNs | nonlinear PDE baseline | L2 relative error, PDE loss, IC loss, BC loss, runtime |
+| 2 | hard IC/BC ansatz | first hard-constraint variant | IC/BC violation and L2 error |
+| 3 | HardNet / HardNet++ study | identify implementable constraint layer | constraint satisfaction, stability |
+| 4 | ECO study | decide if energy constraint is relevant | boundedness and long-time behavior |
+
+## Immediate research tasks
+
+1. Confirm the Burgers baseline runs and produces `burgers_fields.png`, `training_losses.png`, `history.csv`, and `metrics.json`.
+2. Run three seeds under the same fixed condition.
+3. Summarize whether the main failure is PDE residual, initial condition, boundary condition, or reference error.
+4. Read HardNet and HardNet++ with the question: which constraints can be enforced exactly in this Burgers setting?
+5. Decide the first hard-constrained baseline: likely an output transform that satisfies IC/BC by construction.

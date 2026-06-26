@@ -17,6 +17,9 @@ The project is shifting from Poisson-only PINNs tuning to hard-constrained neura
 - `train_poisson_pinn.py`: baseline Poisson PINN training entry point
 - `poisson_problem.py`: exact solution, source term, and PDE residual
 - `pinn_model.py`: MLP model definition
+- `burgers_problem.py`: 1D viscous Burgers equation, IC/BC, residual, and finite-difference reference
+- `train_burgers_pinn.py`: standard PINNs baseline training entry point for Burgers
+- `nonlinear_pde_next_steps.md`: current nonlinear PDE plan and first experiment commands
 - `append_research_log.py`: append structured entries to `research_log.md`
 - `research_log.md`: persistent experiment and decision log
 

@@ -101,3 +101,15 @@
 - W&B run: None
 - Open issue: Need to read the three papers carefully and lock the first nonlinear PDE setting, reference solution, and baseline comparison
 - Next step: Summarize HardNet/HardNet++/ECO and define the first Burgers or other simple nonlinear PDE experiment matrix
+
+## 2026-06-26
+
+- Stage: nonlinear-pde-baseline
+- PDE: 1D viscous Burgers
+- Problem setting: x=[-1,1], t=[0,1], u_t + u u_x = nu u_xx, u(x,0)=-sin(pi x), u(-1,t)=u(1,t)=0, nu=0.01/pi
+- Methods or changes: Added Burgers problem definition and standard PINNs training script with finite-difference reference evaluation
+- What was done: Created burgers_problem.py, train_burgers_pinn.py, nonlinear_pde_next_steps.md, and ran a 2-epoch CPU smoke test
+- Result: Smoke test completed and saved fields, losses, history, metrics, and model files under outputs/burgers_smoke
+- W&B run: None
+- Open issue: Need serious multi-seed GPU runs and paper-level method summary before claiming improvement
+- Next step: Run Burgers baseline on GPU for seeds 0,1,2, then design the first hard-constrained IC/BC variant
