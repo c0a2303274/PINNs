@@ -89,3 +89,15 @@
 - W&B run: None
 - Open issue: Only 3 seeds were tested; this is sufficient for the next progress report but not a full stability claim.
 - Next step: Use this as the Poisson baseline result and start defining the 1D wave equation standard PINNs setup
+
+## 2026-06-26
+
+- Stage: direction-change
+- PDE: Nonlinear PDE
+- Problem setting: Move away from Poisson-only tuning toward hard-constrained neural methods for simple nonlinear PDEs
+- Methods or changes: Advisor recommended HardNet, HardNet++, and ECO as candidate methods; Poisson will be treated as preliminary baseline work
+- What was done: Reviewed the new research direction and selected simple nonlinear PDEs, likely 1D Burgers, as the next entry point
+- Result: New storyline: standard PINNs established the workflow but Poisson accuracy plateaued around e-4, motivating hard-constraint methods for nonlinear PDEs
+- W&B run: None
+- Open issue: Need to read the three papers carefully and lock the first nonlinear PDE setting, reference solution, and baseline comparison
+- Next step: Summarize HardNet/HardNet++/ECO and define the first Burgers or other simple nonlinear PDE experiment matrix

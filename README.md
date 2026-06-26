@@ -4,10 +4,13 @@ This directory is the working repository for the staged PINNs thesis workflow.
 
 ## Current scope
 
-1. Poisson boundary-value problem on `[-1, 1] x [-1, 1]`
-2. 1D wave equation with standard PINNs
-3. Fourier features and GF-PINNs on the same wave setup
-4. Burgers equation after the simpler stages are understood
+The project is shifting from Poisson-only PINNs tuning to hard-constrained neural methods for nonlinear PDEs.
+
+1. Completed preliminary Poisson PINNs experiments to establish the baseline workflow and identify accuracy limits.
+2. Next target: a simple nonlinear PDE, likely 1D Burgers equation, with standard PINNs as the baseline.
+3. Study hard-constraint methods such as HardNet, HardNet++, and ECO as alternatives to soft penalty constraints.
+4. Compare standard PINNs against hard-constrained variants on the nonlinear PDE.
+5. Longer-term target: transfer useful constraints toward harder flow problems, possibly Karman-vortex-like settings.
 
 ## Current files
 
@@ -16,6 +19,15 @@ This directory is the working repository for the staged PINNs thesis workflow.
 - `pinn_model.py`: MLP model definition
 - `append_research_log.py`: append structured entries to `research_log.md`
 - `research_log.md`: persistent experiment and decision log
+
+## Direction change
+
+The Poisson experiments showed that standard PINNs can be improved by Adam->L-BFGS and learning-rate tuning, but the L2 relative error remained around `1e-4` under the tested settings. Based on advisor feedback, the next phase leaves Poisson as a preliminary baseline and moves to simple nonlinear PDEs. The new research story is:
+
+1. Standard PINNs were used first to build the implementation and evaluation workflow.
+2. Poisson experiments suggested that soft penalty constraints alone may not be enough for the intended nonlinear PDE direction.
+3. HardNet, HardNet++, and ECO provide candidate approaches for enforcing constraints more structurally.
+4. The next implementation target is a simple nonlinear PDE before any Karman-vortex-like extension.
 
 ## Local run
 
