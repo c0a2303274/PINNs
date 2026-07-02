@@ -113,3 +113,15 @@
 - W&B run: None
 - Open issue: Need serious multi-seed GPU runs and paper-level method summary before claiming improvement
 - Next step: Run Burgers baseline on GPU for seeds 0,1,2, then design the first hard-constrained IC/BC variant
+
+## 2026-07-02
+
+- Stage: nonlinear-pde-comparison
+- PDE: 1D viscous Burgers
+- Problem setting: Compare soft PINNs with a hard IC/BC ansatz under the same Burgers setup
+- Methods or changes: Added constraint-mode hard-icbc and a comparison runner for two-hour runs
+- What was done: Implemented HardICBCBurgersModel with u(t,x)=(1-t)u0(x)+t(1-x^2)N(t,x), added run_burgers_constraint_comparison.py, and verified a smoke comparison
+- Result: Smoke run completed; hard-icbc gave IC loss 0 and BC loss near machine precision, confirming exact condition enforcement
+- W&B run: None
+- Open issue: This is a simple hard-constraint ansatz, not a full HardNet/HardNet++ implementation; serious two-hour GPU results are still needed
+- Next step: Run soft vs hard-icbc Burgers for two hours per method, first seed 0, then seeds 0,1,2 if stable

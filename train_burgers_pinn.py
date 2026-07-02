@@ -13,6 +13,7 @@ import numpy as np
 import torch
 
 from burgers_problem import boundary_value, finite_difference_reference, initial_condition, pde_residual
+from burgers_models import HardICBCBurgersModel
 from pinn_model import MLP
 
 
@@ -132,6 +133,7 @@ def init_wandb(args: argparse.Namespace, device: torch.device) -> Any:
 
     config = {
         "stage": "burgers-baseline",
+        "constraint_mode": args.constraint_mode,
         "pde": "1D viscous Burgers",
         "problem_setting": "x=[-1,1], t=[0,1], u_t + u u_x = nu u_xx, u(x,0)=-sin(pi x), u(-1,t)=u(1,t)=0",
         "domain": "t=[0,1], x=[-1,1]",
@@ -299,6 +301,7 @@ def save_plots(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a baseline PINN for the 1D viscous Burgers equation.")
+    parser.add_argument("--constraint-mode", choices=["soft", "hard-icbc"], default="soft")
     parser.add_argument("--epochs", type=int, default=20000)
     parser.add_argument("--max-runtime-sec", type=float, default=None, help="stop training after this many seconds")
     parser.add_argument("--n-interior", type=int, default=4096)
@@ -337,7 +340,10 @@ def main() -> None:
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = MLP(in_dim=2, hidden_dim=args.hidden_dim, hidden_layers=args.hidden_layers, out_dim=1).to(device=device, dtype=dtype)
+    if args.constraint_mode == "hard-icbc":
+        model = HardICBCBurgersModel(hidden_dim=args.hidden_dim, hidden_layers=args.hidden_layers).to(device=device, dtype=dtype)
+    else:
+        model = MLP(in_dim=2, hidden_dim=args.hidden_dim, hidden_layers=args.hidden_layers, out_dim=1).to(device=device, dtype=dtype)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     run = init_wandb(args, device)
     history = {"total": [], "pde": [], "ic": [], "bc": []}
@@ -429,6 +435,7 @@ def main() -> None:
     torch.save(model.state_dict(), model_path)
     metrics = {
         "problem": "1D viscous Burgers on t=[0,1], x=[-1,1]",
+        "constraint_mode": args.constraint_mode,
         "equation": "u_t + u u_x = nu u_xx",
         "initial_condition": "u(x,0)=-sin(pi x)",
         "boundary_condition": "u(-1,t)=u(1,t)=0",

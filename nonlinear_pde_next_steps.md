@@ -41,6 +41,21 @@ python train_burgers_pinn.py --epochs 20000 --n-interior 4096 --n-initial 512 --
 | 3 | HardNet / HardNet++ study | identify implementable constraint layer | constraint satisfaction, stability |
 | 4 | ECO study | decide if energy constraint is relevant | boundedness and long-time behavior |
 
+## Two-hour comparison command
+
+This runs standard soft-constraint PINNs and a hard IC/BC ansatz for the same seed. The hard version uses
+`u(t,x)=(1-t)u0(x)+t(1-x^2)N(t,x)`, so it satisfies the initial and boundary conditions by construction.
+
+```bash
+python run_burgers_constraint_comparison.py --seeds 0 --runtime-sec 7200 --epochs 1000000 --n-interior 4096 --n-initial 512 --n-boundary 512 --hidden-dim 128 --hidden-layers 5 --lr 0.001 --wandb-mode offline --output-root outputs/burgers_constraint_comparison_2h
+```
+
+After seed 0 is confirmed, run three seeds:
+
+```bash
+python run_burgers_constraint_comparison.py --seeds 0,1,2 --runtime-sec 7200 --epochs 1000000 --n-interior 4096 --n-initial 512 --n-boundary 512 --hidden-dim 128 --hidden-layers 5 --lr 0.001 --wandb-mode offline --output-root outputs/burgers_constraint_comparison_2h_seeds012
+```
+
 ## Immediate research tasks
 
 1. Confirm the Burgers baseline runs and produces `burgers_fields.png`, `training_losses.png`, `history.csv`, and `metrics.json`.

@@ -77,7 +77,9 @@ def finite_difference_reference(
             continue
 
         u_old = u.copy()
-        du_dx = (u_old[2:] - u_old[:-2]) / (2.0 * dx)
+        backward = (u_old[1:-1] - u_old[:-2]) / dx
+        forward = (u_old[2:] - u_old[1:-1]) / dx
+        du_dx = np.where(u_old[1:-1] >= 0.0, backward, forward)
         d2u_dx2 = (u_old[2:] - 2.0 * u_old[1:-1] + u_old[:-2]) / (dx * dx)
         u[1:-1] = u_old[1:-1] - dt * u_old[1:-1] * du_dx + nu * dt * d2u_dx2
         u[0] = 0.0
