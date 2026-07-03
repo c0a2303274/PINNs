@@ -20,14 +20,15 @@ The first seed shows similar L2 error to soft PINNs, so multi-seed verification 
 6. Result so far: hard IC/BC exactly satisfies IC/BC, but L2 improvement is not yet conclusive.
 7. Next direction: multi-seed verification, then HardNet/HardNet++-style constraint enforcement.
 
-## Must-have experiments
+## Must-have work
 
-| priority | experiment | purpose | output needed |
+| priority | item | purpose | output needed |
 |---|---|---|---|
-| P0 | Burgers soft vs hard-icbc, seeds 0,1,2, 2h per run | check seed stability | summary table, fields plot, smoothed losses |
-| P0 | analyze mean/std across seeds | avoid over-claiming from seed 0 | mean L2, mean PDE loss, IC/BC losses |
-| P1 | repeat best setting with L-BFGS refinement | see if PDE residual gap changes | comparison table |
-| P1 | read HardNet/HardNet++ method sections | clarify what is actually adopted | method summary paragraph |
+| P0 | HardNet/HardNet++ method summary | clarify what will be adopted next | short method table and paragraph |
+| P0 | implement HardNet-style affine equality projection smoke test | move from hand-made ansatz to paper-based machinery | projection code and numerical check |
+| P0 | Burgers soft vs hard-icbc, seeds 0,1,2 if GPU time is available | check seed stability without blocking HardNet transition | summary table |
+| P1 | connect projection layer to a vector-valued constrained toy problem | prepare for incompressible-flow-like constraints | small reproducible result |
+| P1 | repeat Burgers best setting with L-BFGS refinement | see if PDE residual gap changes | optional comparison table |
 | P2 | viscosity or collocation ablation | test harder/easier nonlinear regimes | optional table |
 
 ## Immediate GPU command
@@ -55,10 +56,10 @@ Maximum wall time is about 12 hours.
 
 | date range | task | deliverable |
 |---|---|---|
-| Days 1-2 | Run seeds 0,1,2 and collect results | `summary.md`, representative figures |
-| Days 3-4 | Analyze mean/std and failure region | result paragraph and table |
-| Days 5-6 | Add L-BFGS or one controlled follow-up if needed | one extra comparison, only if multi-seed result is unclear |
-| Days 7-8 | Summarize HardNet and HardNet++ accurately | method comparison notes |
+| Days 1-2 | Summarize HardNet and HardNet++ accurately | method comparison notes |
+| Days 3-4 | Implement HardNet-style affine projection smoke test | code and numerical verification |
+| Days 5-6 | Run Burgers seeds 0,1,2 only if GPU time is available | optional stability table |
+| Days 7-8 | Add one vector-valued constrained toy problem | bridge toward flow constraints |
 | Days 9-10 | Draft resume structure | first resume draft |
 | Days 11-12 | Insert figures/tables and polish explanation | near-final resume |
 | Days 13-14 | Final check and advisor-facing wording | final PDF/Word/LaTeX output |
@@ -72,7 +73,7 @@ Maximum wall time is about 12 hours.
 5. Methods: soft PINNs vs hard IC/BC ansatz
 6. Experimental setup
 7. Results and discussion
-8. Future work: HardNet/HardNet++ and harder flow problems
+8. Future work: HardNet++ and harder flow problems such as Karman-vortex-like settings
 
 ## Wording guardrails
 

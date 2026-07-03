@@ -137,3 +137,15 @@
 - W&B run: None
 - Open issue: Need seeds 0,1,2 results before making a stable claim about hard IC/BC effectiveness
 - Next step: Run the 12-hour maximum seeds 0,1,2 Burgers soft vs hard-icbc comparison on the research GPU
+
+## 2026-07-03
+
+- Stage: hardnet-transition
+- PDE: 1D viscous Burgers and constrained toy problems
+- Problem setting: Move quickly from the hard IC/BC ansatz toward HardNet and HardNet++ implementation
+- Methods or changes: Added HardNet transition plan and a differentiable affine equality projection utility
+- What was done: Implemented project_affine_equality and smoke_hardnet_projection.py; verified projection constraint satisfaction and gradient flow
+- Result: Affine equality violation decreased from 3.43e+00 to 1.19e-07 in the smoke test, with nonzero gradient through the projection layer
+- W&B run: None
+- Open issue: This is only the first HardNet-style affine projection component; it is not yet connected to a PDE model or HardNet++ nonlinear constraints
+- Next step: Connect the projection layer to a vector-valued constrained toy problem, then implement a HardNet++-style nonlinear correction loop

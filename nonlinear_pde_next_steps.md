@@ -58,8 +58,8 @@ python run_burgers_constraint_comparison.py --seeds 0,1,2 --runtime-sec 7200 --e
 
 ## Immediate research tasks
 
-1. Run `soft` vs `hard-icbc` for seeds 0,1,2 under the same fixed condition.
-2. Summarize mean and standard deviation of L2 relative error, PDE loss, IC loss, BC loss, runtime, and epoch count.
-3. Decide whether the main failure is PDE residual, the steep transition near `x=0`, reference-solution accuracy, or optimization.
-4. Read HardNet and HardNet++ with the question: which constraints can be enforced exactly in this Burgers setting?
-5. Prepare the midterm resume using `midterm_resume_plan.md`.
+1. Read HardNet and HardNet++ with the question: which constraint layer can be implemented first?
+2. Implement a HardNet-style affine equality projection smoke test.
+3. Keep the Burgers `soft` vs `hard-icbc` seeds 0,1,2 run as useful validation, but do not let it block the HardNet transition.
+4. Build one vector-valued constrained toy problem to prepare for flow constraints.
+5. Prepare the midterm resume using `midterm_resume_plan.md` and `hardnet_transition_plan.md`.
