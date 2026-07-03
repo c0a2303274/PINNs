@@ -25,6 +25,8 @@ The project is shifting from Poisson-only PINNs tuning to hard-constrained neura
 - `hard_constraints.py`: HardNet-style affine equality projection utility
 - `smoke_hardnet_projection.py`: smoke test for projection accuracy and gradient flow
 - `train_hardnet_affine_demo.py`: minimal HardNet training demo with an affine equality constraint
+- `train_hardnet_vector_field.py`: constrained vector-field training demo for soft MLP vs HardNet
+- `run_hardnet_vector_comparison.py`: timed comparison runner for vector-field soft vs HardNet experiments
 - `hardnet_transition_plan.md`: plan for moving from the hard IC/BC ansatz to HardNet/HardNet++
 - `append_research_log.py`: append structured entries to `research_log.md`
 - `research_log.md`: persistent experiment and decision log

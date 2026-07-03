@@ -133,10 +133,29 @@ gradients flow through the projection layer
 
 ## Immediate next coding task
 
-Connect this HardNet module to a vector-valued PDE-like toy problem before moving to HardNet++:
+The HardNet module is now connected to a vector-valued PDE-like toy problem:
 
 ```text
 network output: [u, v]
-constraint: linear conservation or divergence-free-like relation
-goal: verify that the projection layer remains stable in a PDE-style training loop
+constraint: u + v = 0
+target: u = sin(pi x) cos(pi y), v = -u
+```
+
+Run a timed GPU comparison:
+
+```bash
+python run_hardnet_vector_comparison.py --seeds 0,1,2 --runtime-sec 3600 --epochs 1000000 --n-points 4096 --hidden-dim 128 --hidden-layers 5 --lr 0.001 --output-root outputs/hardnet_vector_comparison_1h_seeds012
+```
+
+Expected result:
+
+```text
+soft MLP may fit the target but can violate u+v=0
+HardNet should keep max |u+v| near machine precision
+```
+
+Next after this run:
+
+```text
+implement HardNet++-style nonlinear equality correction
 ```

@@ -26,6 +26,7 @@ The first seed shows similar L2 error to soft PINNs, so multi-seed verification 
 |---|---|---|---|
 | P0 | HardNet/HardNet++ method summary | clarify what will be adopted next | short method table and paragraph |
 | P0 | implement HardNet-style affine equality projection smoke test | move from hand-made ansatz to paper-based machinery | projection code and numerical check |
+| P0 | run HardNet vector-field comparison | show full HardNet architecture on a vector-valued constrained problem | L2 and constraint violation table |
 | P0 | Burgers soft vs hard-icbc, seeds 0,1,2 if GPU time is available | check seed stability without blocking HardNet transition | summary table |
 | P1 | connect projection layer to a vector-valued constrained toy problem | prepare for incompressible-flow-like constraints | small reproducible result |
 | P1 | repeat Burgers best setting with L-BFGS refinement | see if PDE residual gap changes | optional comparison table |
@@ -58,7 +59,7 @@ Maximum wall time is about 12 hours.
 |---|---|---|
 | Days 1-2 | Summarize HardNet and HardNet++ accurately | method comparison notes |
 | Days 3-4 | Implement HardNet-style affine projection smoke test | code and numerical verification |
-| Days 5-6 | Run Burgers seeds 0,1,2 only if GPU time is available | optional stability table |
+| Days 5-6 | Run HardNet vector-field comparison and Burgers seeds if GPU time allows | HardNet table and optional Burgers stability table |
 | Days 7-8 | Add one vector-valued constrained toy problem | bridge toward flow constraints |
 | Days 9-10 | Draft resume structure | first resume draft |
 | Days 11-12 | Insert figures/tables and polish explanation | near-final resume |

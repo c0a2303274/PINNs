@@ -161,3 +161,15 @@
 - W&B run: None
 - Open issue: This covers affine equality HardNet only; nonlinear HardNet++ correction and PDE integration are still next steps
 - Next step: Create a PDE-like vector-valued constrained toy problem, then implement HardNet++ nonlinear equality correction
+
+## 2026-07-03
+
+- Stage: hardnet-vector-field
+- PDE: Constrained vector-field toy problem
+- Problem setting: Compare a soft MLP and HardNet on a vector-valued field with constraint u+v=0
+- Methods or changes: Added train_hardnet_vector_field.py and run_hardnet_vector_comparison.py
+- What was done: Implemented a timed comparison runner and verified a short smoke run for soft and hardnet methods
+- Result: Smoke run showed soft constraint violation around 9.88e-01 while HardNet kept max violation around 5.96e-08
+- W&B run: None
+- Open issue: Need full GPU runs for seeds 0,1,2 and then HardNet++ nonlinear constraint implementation
+- Next step: Run run_hardnet_vector_comparison.py on GPU for seeds 0,1,2 with one hour per method and seed
