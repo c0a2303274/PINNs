@@ -125,3 +125,15 @@
 - W&B run: None
 - Open issue: This is a simple hard-constraint ansatz, not a full HardNet/HardNet++ implementation; serious two-hour GPU results are still needed
 - Next step: Run soft vs hard-icbc Burgers for two hours per method, first seed 0, then seeds 0,1,2 if stable
+
+## 2026-07-03
+
+- Stage: midterm-preparation
+- PDE: 1D viscous Burgers
+- Problem setting: After advisor presentation, continue Burgers soft vs hard-constraint comparison and prepare midterm resume within about two weeks
+- Methods or changes: Added a two-week midterm resume plan and updated nonlinear PDE next steps
+- What was done: Recorded the current research story, must-have experiments, GPU command for seeds 0,1,2, and resume outline
+- Result: Advisor feedback was positive; next priority is multi-seed validation and resume-ready result organization
+- W&B run: None
+- Open issue: Need seeds 0,1,2 results before making a stable claim about hard IC/BC effectiveness
+- Next step: Run the 12-hour maximum seeds 0,1,2 Burgers soft vs hard-icbc comparison on the research GPU
