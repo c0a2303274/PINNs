@@ -24,6 +24,7 @@ The project is shifting from Poisson-only PINNs tuning to hard-constrained neura
 - `nonlinear_pde_next_steps.md`: current nonlinear PDE plan and first experiment commands
 - `hard_constraints.py`: HardNet-style affine equality projection utility
 - `smoke_hardnet_projection.py`: smoke test for projection accuracy and gradient flow
+- `train_hardnet_affine_demo.py`: minimal HardNet training demo with an affine equality constraint
 - `hardnet_transition_plan.md`: plan for moving from the hard IC/BC ansatz to HardNet/HardNet++
 - `append_research_log.py`: append structured entries to `research_log.md`
 - `research_log.md`: persistent experiment and decision log

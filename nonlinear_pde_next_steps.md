@@ -58,8 +58,8 @@ python run_burgers_constraint_comparison.py --seeds 0,1,2 --runtime-sec 7200 --e
 
 ## Immediate research tasks
 
-1. Read HardNet and HardNet++ with the question: which constraint layer can be implemented first?
-2. Implement a HardNet-style affine equality projection smoke test.
+1. Extend the current HardNet affine projection demo to a PDE-like vector-valued toy problem.
+2. Implement a HardNet++-style nonlinear equality correction loop after the affine HardNet demo is stable.
 3. Keep the Burgers `soft` vs `hard-icbc` seeds 0,1,2 run as useful validation, but do not let it block the HardNet transition.
-4. Build one vector-valued constrained toy problem to prepare for flow constraints.
+4. Connect the hard-constraint machinery to Burgers or a simple incompressible-flow-like constraint.
 5. Prepare the midterm resume using `midterm_resume_plan.md` and `hardnet_transition_plan.md`.

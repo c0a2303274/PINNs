@@ -149,3 +149,15 @@
 - W&B run: None
 - Open issue: This is only the first HardNet-style affine projection component; it is not yet connected to a PDE model or HardNet++ nonlinear constraints
 - Next step: Connect the projection layer to a vector-valued constrained toy problem, then implement a HardNet++-style nonlinear correction loop
+
+## 2026-07-03
+
+- Stage: hardnet-implementation
+- PDE: Constrained vector-valued toy problem
+- Problem setting: Implement full minimal HardNet architecture as base network plus differentiable affine equality projection layer
+- Methods or changes: Added HardNet nn.Module and train_hardnet_affine_demo.py
+- What was done: Built a trainable HardNet demo for y0+y1=1 and ran a 50-epoch CPU smoke test
+- Result: The demo trained successfully and kept max constraint violation around 1.19e-07, confirming hard constraint satisfaction during training
+- W&B run: None
+- Open issue: This covers affine equality HardNet only; nonlinear HardNet++ correction and PDE integration are still next steps
+- Next step: Create a PDE-like vector-valued constrained toy problem, then implement HardNet++ nonlinear equality correction

@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 
 def project_affine_equality(
@@ -46,3 +47,38 @@ def affine_violation(y: torch.Tensor, a_matrix: torch.Tensor, b_vector: torch.Te
     else:
         b = b_vector.to(device=y.device, dtype=y.dtype)
     return y @ a.T - b
+
+
+class AffineEqualityProjection(nn.Module):
+    """Differentiable projection layer for affine equality constraints."""
+
+    def __init__(self, a_matrix: torch.Tensor, b_vector: torch.Tensor, ridge: float = 1.0e-8):
+        super().__init__()
+        self.register_buffer("a_matrix", a_matrix.detach().clone().float())
+        self.register_buffer("b_vector", b_vector.detach().clone().float())
+        self.ridge = ridge
+
+    def forward(self, y: torch.Tensor) -> torch.Tensor:
+        return project_affine_equality(y, self.a_matrix, self.b_vector, ridge=self.ridge)
+
+    def violation(self, y: torch.Tensor) -> torch.Tensor:
+        return affine_violation(y, self.a_matrix, self.b_vector)
+
+
+class HardNet(nn.Module):
+    """Neural network with a differentiable hard-constraint projection layer.
+
+    This implements the practical HardNet pattern for affine equality
+    constraints: unconstrained network output followed by projection.
+    """
+
+    def __init__(self, network: nn.Module, projection: nn.Module):
+        super().__init__()
+        self.network = network
+        self.projection = projection
+
+    def raw_forward(self, coords: torch.Tensor) -> torch.Tensor:
+        return self.network(coords)
+
+    def forward(self, coords: torch.Tensor) -> torch.Tensor:
+        return self.projection(self.raw_forward(coords))

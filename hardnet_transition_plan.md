@@ -102,19 +102,41 @@ HardNet has already been implemented.
 
 until the projection layer is actually coded and tested.
 
-## Immediate next coding task
+## Current implementation
 
-Create:
+The first HardNet architecture is implemented:
+
+```text
+HardNet = base neural network + differentiable affine equality projection layer
+```
+
+Available files:
 
 ```text
 hard_constraints.py
-tests or smoke script for affine equality projection
+smoke_hardnet_projection.py
+train_hardnet_affine_demo.py
 ```
 
-Minimum check:
+The current demo learns a vector-valued function under the constraint:
 
 ```text
-raw output violates A y = b
-projected output satisfies A y = b to numerical precision
-gradients flow through the projection
+y0 + y1 = 1
+```
+
+The model output is always projected to satisfy the constraint. A short smoke run verified:
+
+```text
+max constraint violation: about 1e-7
+gradients flow through the projection layer
+```
+
+## Immediate next coding task
+
+Connect this HardNet module to a vector-valued PDE-like toy problem before moving to HardNet++:
+
+```text
+network output: [u, v]
+constraint: linear conservation or divergence-free-like relation
+goal: verify that the projection layer remains stable in a PDE-style training loop
 ```
