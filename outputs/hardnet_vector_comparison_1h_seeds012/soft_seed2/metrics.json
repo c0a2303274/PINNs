@@ -1,0 +1,16 @@
+{
+  "method": "soft",
+  "constraint": "u + v = 0",
+  "epochs": 1000000,
+  "completed_epochs": 1000000,
+  "max_runtime_sec": 3600.0,
+  "n_points": 4096,
+  "hidden_dim": 128,
+  "hidden_layers": 5,
+  "lr": 0.001,
+  "seed": 2,
+  "device": "cuda",
+  "runtime_sec": 1909.1503059864044,
+  "l2_relative_error": 0.002848300151526928,
+  "max_constraint_violation": 0.00010513514280319214
+}
