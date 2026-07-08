@@ -197,3 +197,15 @@
 - W&B run: None
 - Open issue: This is a nonlinear constraint toy demo, not yet a Burgers or Karman-vortex PDE result
 - Next step: Run the HardNet++ circle comparison on GPU for seeds 0,1,2, then connect nonlinear constraints back to a PDE setting
+
+## 2026-07-08
+
+- Stage: burgers-integrated-hard-constraints
+- PDE: 1D viscous Burgers
+- Problem setting: Integrate hard IC/BC and bounded correction variants into the Burgers training path
+- Methods or changes: Added BoundedHardICBCBurgersModel and run_burgers_integrated_comparison.py
+- What was done: Implemented soft, hard_icbc_lbfgs, and bounded_hard_icbc_lbfgs comparison path and verified a smoke run
+- Result: Smoke run completed; the integrated runner can switch variants and enter L-BFGS where configured
+- W&B run: None
+- Open issue: Need GPU seed 0 integrated result to see whether bounded correction improves L2, PDE residual, or stability
+- Next step: Run the integrated Burgers comparison on GPU for seed 0, then extend the best setting to seeds 0,1,2

@@ -13,7 +13,7 @@ import numpy as np
 import torch
 
 from burgers_problem import boundary_value, finite_difference_reference, initial_condition, pde_residual
-from burgers_models import HardICBCBurgersModel
+from burgers_models import BoundedHardICBCBurgersModel, HardICBCBurgersModel
 from pinn_model import MLP
 
 
@@ -302,7 +302,7 @@ def save_plots(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a baseline PINN for the 1D viscous Burgers equation.")
-    parser.add_argument("--constraint-mode", choices=["soft", "hard-icbc"], default="soft")
+    parser.add_argument("--constraint-mode", choices=["soft", "hard-icbc", "bounded-hard-icbc"], default="soft")
     parser.add_argument("--epochs", type=int, default=20000)
     parser.add_argument("--max-runtime-sec", type=float, default=None, help="stop training after this many seconds")
     parser.add_argument("--adam-max-runtime-sec", type=float, default=None, help="stop the Adam phase after this many seconds")
@@ -314,6 +314,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--lambda-ic", type=float, default=1.0)
     parser.add_argument("--lambda-bc", type=float, default=1.0)
+    parser.add_argument("--bound-amplitude", type=float, default=1.0)
     parser.add_argument("--nu", type=float, default=0.01 / math.pi)
     parser.add_argument("--lbfgs-steps", type=int, default=0)
     parser.add_argument("--lbfgs-lr", type=float, default=1.0)
@@ -344,6 +345,12 @@ def main() -> None:
 
     if args.constraint_mode == "hard-icbc":
         model = HardICBCBurgersModel(hidden_dim=args.hidden_dim, hidden_layers=args.hidden_layers).to(device=device, dtype=dtype)
+    elif args.constraint_mode == "bounded-hard-icbc":
+        model = BoundedHardICBCBurgersModel(
+            hidden_dim=args.hidden_dim,
+            hidden_layers=args.hidden_layers,
+            amplitude=args.bound_amplitude,
+        ).to(device=device, dtype=dtype)
     else:
         model = MLP(in_dim=2, hidden_dim=args.hidden_dim, hidden_layers=args.hidden_layers, out_dim=1).to(device=device, dtype=dtype)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
@@ -457,6 +464,7 @@ def main() -> None:
         "lr": args.lr,
         "lambda_ic": args.lambda_ic,
         "lambda_bc": args.lambda_bc,
+        "bound_amplitude": args.bound_amplitude,
         "nu": args.nu,
         "lbfgs_steps": args.lbfgs_steps,
         "completed_lbfgs_steps": lbfgs_completed_steps,

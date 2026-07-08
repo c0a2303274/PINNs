@@ -42,6 +42,22 @@ python run_burgers_fast_track.py --configs hard_icbc_adam,hard_icbc_lbfgs,hard_i
 
 This is at most about 6 hours for seed 0. If one setting is clearly better, run that setting for seeds 0,1,2.
 
+## Burgers integrated command
+
+Use this after confirming the fast-track result. It compares the current Burgers path in one place:
+
+```bash
+python run_burgers_integrated_comparison.py --configs soft,hard_icbc_lbfgs,bounded_hard_icbc_lbfgs --seeds 0 --runtime-sec 7200 --epochs 1000000 --n-interior 4096 --n-initial 512 --n-boundary 512 --hidden-dim 128 --hidden-layers 5 --wandb-mode offline --output-root outputs/burgers_integrated_seed0
+```
+
+Interpretation:
+
+```text
+soft: standard PINNs
+hard_icbc_lbfgs: exact IC/BC + PDE residual loss
+bounded_hard_icbc_lbfgs: exact IC/BC + bounded correction + PDE residual loss
+```
+
 ## Immediate GPU command
 
 Run this next on the research GPU:

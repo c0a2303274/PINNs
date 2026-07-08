@@ -7,7 +7,13 @@ from pathlib import Path
 
 
 CONFIGS = {
-    "hard_icbc_adam": {
+    "soft": {
+        "constraint_mode": "soft",
+        "lr": 1.0e-3,
+        "lbfgs_steps": 0,
+        "adam_fraction": None,
+    },
+    "hard_icbc": {
         "constraint_mode": "hard-icbc",
         "lr": 1.0e-3,
         "lbfgs_steps": 0,
@@ -18,12 +24,6 @@ CONFIGS = {
         "lr": 1.0e-3,
         "lbfgs_steps": 50000,
         "adam_fraction": 0.5,
-    },
-    "hard_icbc_lower_lr": {
-        "constraint_mode": "hard-icbc",
-        "lr": 5.0e-4,
-        "lbfgs_steps": 0,
-        "adam_fraction": None,
     },
     "bounded_hard_icbc": {
         "constraint_mode": "bounded-hard-icbc",
@@ -37,25 +37,17 @@ CONFIGS = {
         "lbfgs_steps": 50000,
         "adam_fraction": 0.5,
     },
-    "soft_lbfgs": {
-        "constraint_mode": "soft",
-        "lr": 1.0e-3,
-        "lbfgs_steps": 50000,
-        "adam_fraction": 0.5,
-    },
 }
 
 
-def parse_seeds(raw: str) -> list[int]:
-    return [int(item.strip()) for item in raw.split(",") if item.strip()]
+def parse_csv(raw: str) -> list[str]:
+    return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-def parse_configs(raw: str) -> list[str]:
-    names = [item.strip() for item in raw.split(",") if item.strip()]
+def validate_configs(names: list[str]) -> None:
     unknown = sorted(set(names) - set(CONFIGS))
     if unknown:
         raise ValueError(f"unknown configs: {unknown}; choices={sorted(CONFIGS)}")
-    return names
 
 
 def run_one(args: argparse.Namespace, config_name: str, seed: int, output_dir: Path) -> dict[str, object]:
@@ -85,6 +77,8 @@ def run_one(args: argparse.Namespace, config_name: str, seed: int, output_dir: P
         str(args.lambda_ic),
         "--lambda-bc",
         str(args.lambda_bc),
+        "--bound-amplitude",
+        str(args.bound_amplitude),
         "--nu",
         str(args.nu),
         "--lbfgs-steps",
@@ -96,9 +90,9 @@ def run_one(args: argparse.Namespace, config_name: str, seed: int, output_dir: P
         "--wandb-mode",
         args.wandb_mode,
         "--wandb-group",
-        f"burgers-fast-{config_name}",
+        f"burgers-integrated-{config_name}",
         "--wandb-tags",
-        f"burgers,{config_name},fast-track",
+        f"burgers,{config_name},integrated",
     ]
     if config["adam_fraction"] is not None:
         cmd.extend(["--adam-max-runtime-sec", str(args.runtime_sec * float(config["adam_fraction"]))])
@@ -116,14 +110,12 @@ def write_summary(rows: list[dict[str, object]], output_root: Path) -> None:
         "constraint_mode",
         "seed",
         "l2_relative_error",
-        "final_total_loss",
         "final_pde_loss",
         "final_ic_loss",
         "final_bc_loss",
         "runtime_sec",
         "completed_epochs",
         "completed_lbfgs_steps",
-        "lr",
     ]
     with (output_root / "summary.csv").open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=keys)
@@ -132,7 +124,7 @@ def write_summary(rows: list[dict[str, object]], output_root: Path) -> None:
             writer.writerow({key: row.get(key, "") for key in keys})
 
     with (output_root / "summary.md").open("w", encoding="utf-8") as fh:
-        fh.write("# Burgers fast-track comparison\n\n")
+        fh.write("# Burgers integrated comparison\n\n")
         fh.write("| config | mode | seed | L2 relative error | PDE loss | IC loss | BC loss | runtime sec | epochs | lbfgs steps |\n")
         fh.write("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|\n")
         for row in rows:
@@ -148,10 +140,10 @@ def write_summary(rows: list[dict[str, object]], output_root: Path) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run fast-track Burgers configs before the next seminar.")
-    parser.add_argument("--configs", type=str, default="hard_icbc_adam,hard_icbc_lbfgs,hard_icbc_lower_lr")
+    parser = argparse.ArgumentParser(description="Run integrated Burgers hard-constraint comparisons.")
+    parser.add_argument("--configs", type=str, default="soft,hard_icbc_lbfgs,bounded_hard_icbc_lbfgs")
     parser.add_argument("--seeds", type=str, default="0")
-    parser.add_argument("--runtime-sec", type=float, default=7200.0, help="runtime budget per config and seed")
+    parser.add_argument("--runtime-sec", type=float, default=7200.0)
     parser.add_argument("--epochs", type=int, default=1_000_000)
     parser.add_argument("--n-interior", type=int, default=4096)
     parser.add_argument("--n-initial", type=int, default=512)
@@ -160,18 +152,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hidden-layers", type=int, default=5)
     parser.add_argument("--lambda-ic", type=float, default=1.0)
     parser.add_argument("--lambda-bc", type=float, default=1.0)
+    parser.add_argument("--bound-amplitude", type=float, default=1.0)
     parser.add_argument("--nu", type=float, default=0.01 / 3.141592653589793)
     parser.add_argument("--wandb-mode", choices=["online", "offline", "disabled"], default="offline")
-    parser.add_argument("--output-root", type=Path, default=Path("outputs/burgers_fast_track"))
+    parser.add_argument("--output-root", type=Path, default=Path("outputs/burgers_integrated_comparison"))
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    config_names = parse_csv(args.configs)
+    validate_configs(config_names)
     args.output_root.mkdir(parents=True, exist_ok=True)
     rows = []
-    for seed in parse_seeds(args.seeds):
-        for config_name in parse_configs(args.configs):
+    for seed_text in parse_csv(args.seeds):
+        seed = int(seed_text)
+        for config_name in config_names:
             output_dir = args.output_root / f"{config_name}_seed{seed}"
             rows.append(run_one(args, config_name, seed, output_dir))
             write_summary(rows, args.output_root)
