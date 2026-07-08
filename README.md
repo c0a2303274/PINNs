@@ -21,6 +21,7 @@ The project is shifting from Poisson-only PINNs tuning to hard-constrained neura
 - `burgers_models.py`: hard IC/BC ansatz model for Burgers
 - `train_burgers_pinn.py`: standard PINNs baseline training entry point for Burgers
 - `run_burgers_constraint_comparison.py`: run soft PINNs vs hard IC/BC Burgers comparisons
+- `run_burgers_fast_track.py`: run promising Burgers hard-IC/BC configs before the next seminar
 - `nonlinear_pde_next_steps.md`: current nonlinear PDE plan and first experiment commands
 - `hard_constraints.py`: HardNet-style affine equality projection utility
 - `smoke_hardnet_projection.py`: smoke test for projection accuracy and gradient flow

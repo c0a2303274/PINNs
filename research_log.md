@@ -173,3 +173,15 @@
 - W&B run: None
 - Open issue: Need full GPU runs for seeds 0,1,2 and then HardNet++ nonlinear constraint implementation
 - Next step: Run run_hardnet_vector_comparison.py on GPU for seeds 0,1,2 with one hour per method and seed
+
+## 2026-07-08
+
+- Stage: burgers-fast-track
+- PDE: 1D viscous Burgers
+- Problem setting: Prepare promising hard-IC/BC Burgers runs before the next seminar
+- Methods or changes: Added Adam runtime split support and run_burgers_fast_track.py
+- What was done: Implemented configs for hard_icbc_adam, hard_icbc_lbfgs, hard_icbc_lower_lr and verified a smoke run
+- Result: Smoke run completed and confirmed Adam->L-BFGS enters the L-BFGS phase after the Adam runtime budget
+- W&B run: None
+- Open issue: Need GPU result for seed 0 to choose the best Burgers setting before multi-seed validation
+- Next step: Run run_burgers_fast_track.py on GPU for seed 0 with 7200 seconds per config

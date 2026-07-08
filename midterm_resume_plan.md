@@ -32,6 +32,16 @@ The first seed shows similar L2 error to soft PINNs, so multi-seed verification 
 | P1 | repeat Burgers best setting with L-BFGS refinement | see if PDE residual gap changes | optional comparison table |
 | P2 | viscosity or collocation ablation | test harder/easier nonlinear regimes | optional table |
 
+## Burgers fast-track command
+
+To get a stronger Burgers result before the next seminar, run the promising hard-IC/BC configurations first:
+
+```bash
+python run_burgers_fast_track.py --configs hard_icbc_adam,hard_icbc_lbfgs,hard_icbc_lower_lr --seeds 0 --runtime-sec 7200 --epochs 1000000 --n-interior 4096 --n-initial 512 --n-boundary 512 --hidden-dim 128 --hidden-layers 5 --wandb-mode offline --output-root outputs/burgers_fast_track_seed0
+```
+
+This is at most about 6 hours for seed 0. If one setting is clearly better, run that setting for seeds 0,1,2.
+
 ## Immediate GPU command
 
 Run this next on the research GPU:

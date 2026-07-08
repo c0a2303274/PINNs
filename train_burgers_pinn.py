@@ -146,6 +146,7 @@ def init_wandb(args: argparse.Namespace, device: torch.device) -> Any:
         "activation": "tanh",
         "epochs": args.epochs,
         "max_runtime_sec": args.max_runtime_sec,
+        "adam_max_runtime_sec": args.adam_max_runtime_sec,
         "collocation_n": args.n_interior,
         "initial_n": args.n_initial,
         "boundary_n": args.n_boundary,
@@ -304,6 +305,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--constraint-mode", choices=["soft", "hard-icbc"], default="soft")
     parser.add_argument("--epochs", type=int, default=20000)
     parser.add_argument("--max-runtime-sec", type=float, default=None, help="stop training after this many seconds")
+    parser.add_argument("--adam-max-runtime-sec", type=float, default=None, help="stop the Adam phase after this many seconds")
     parser.add_argument("--n-interior", type=int, default=4096)
     parser.add_argument("--n-initial", type=int, default=512)
     parser.add_argument("--n-boundary", type=int, default=512)
@@ -353,6 +355,9 @@ def main() -> None:
     for epoch in range(1, args.epochs + 1):
         if runtime_exceeded(start_time, args.max_runtime_sec):
             print(f"stopping Adam phase at epoch={epoch - 1} due to max runtime")
+            break
+        if runtime_exceeded(start_time, args.adam_max_runtime_sec):
+            print(f"stopping Adam phase at epoch={epoch - 1} due to Adam runtime budget")
             break
 
         optimizer.zero_grad(set_to_none=True)
@@ -443,6 +448,7 @@ def main() -> None:
         "epochs": args.epochs,
         "completed_epochs": completed_epochs,
         "max_runtime_sec": args.max_runtime_sec,
+        "adam_max_runtime_sec": args.adam_max_runtime_sec,
         "n_interior": args.n_interior,
         "n_initial": args.n_initial,
         "n_boundary": args.n_boundary,
