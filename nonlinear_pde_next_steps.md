@@ -61,5 +61,5 @@ python run_burgers_constraint_comparison.py --seeds 0,1,2 --runtime-sec 7200 --e
 1. Run the HardNet vector-field comparison for seeds 0,1,2 on GPU.
 2. Analyze whether HardNet keeps the constraint violation near machine precision while maintaining L2 accuracy.
 3. Run the Burgers fast-track comparison for hard-IC/BC Adam, hard-IC/BC Adam->L-BFGS, and lower learning rate.
-4. Implement a HardNet++-style nonlinear equality correction loop after the Burgers fast-track result is collected.
+4. Run the HardNet++ circle comparison to verify nonlinear equality enforcement.
 5. Prepare the midterm resume using `midterm_resume_plan.md` and `hardnet_transition_plan.md`.

@@ -185,3 +185,15 @@
 - W&B run: None
 - Open issue: Need GPU result for seed 0 to choose the best Burgers setting before multi-seed validation
 - Next step: Run run_burgers_fast_track.py on GPU for seed 0 with 7200 seconds per config
+
+## 2026-07-08
+
+- Stage: hardnetpp-nonlinear-demo
+- PDE: Nonlinear constrained toy problem
+- Problem setting: Implement HardNet++-style nonlinear equality enforcement before connecting back to Burgers
+- Methods or changes: Added NonlinearEqualityProjection, HardNetPlusPlus, train_hardnetpp_circle_demo.py, and run_hardnetpp_circle_comparison.py
+- What was done: Verified a smoke comparison on the unit-circle constraint y0^2+y1^2=1
+- Result: HardNet++ smoke run kept max nonlinear constraint violation around 1.19e-07, while soft MLP had violation around 1.00 in the short run
+- W&B run: None
+- Open issue: This is a nonlinear constraint toy demo, not yet a Burgers or Karman-vortex PDE result
+- Next step: Run the HardNet++ circle comparison on GPU for seeds 0,1,2, then connect nonlinear constraints back to a PDE setting

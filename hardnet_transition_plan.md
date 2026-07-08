@@ -159,3 +159,26 @@ Next after this run:
 ```text
 implement HardNet++-style nonlinear equality correction
 ```
+
+## HardNet++ nonlinear equality demo
+
+The first HardNet++-style layer is implemented for nonlinear equality constraints. It iteratively applies damped local linearization corrections.
+
+Current toy constraint:
+
+```text
+y0^2 + y1^2 = 1
+```
+
+Run a GPU comparison:
+
+```bash
+python run_hardnetpp_circle_comparison.py --seeds 0,1,2 --runtime-sec 1800 --epochs 1000000 --n-points 1024 --hidden-dim 64 --hidden-layers 3 --lr 0.001 --projection-iterations 15 --output-root outputs/hardnetpp_circle_comparison_30m_seeds012
+```
+
+Expected result:
+
+```text
+soft MLP may fit the circle target but does not guarantee y0^2+y1^2=1
+HardNet++ should keep nonlinear constraint violation near machine precision
+```

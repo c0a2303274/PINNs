@@ -28,6 +28,8 @@ The project is shifting from Poisson-only PINNs tuning to hard-constrained neura
 - `train_hardnet_affine_demo.py`: minimal HardNet training demo with an affine equality constraint
 - `train_hardnet_vector_field.py`: constrained vector-field training demo for soft MLP vs HardNet
 - `run_hardnet_vector_comparison.py`: timed comparison runner for vector-field soft vs HardNet experiments
+- `train_hardnetpp_circle_demo.py`: HardNet++-style nonlinear equality demo on a unit-circle constraint
+- `run_hardnetpp_circle_comparison.py`: timed comparison runner for soft MLP vs HardNet++ nonlinear constraints
 - `hardnet_transition_plan.md`: plan for moving from the hard IC/BC ansatz to HardNet/HardNet++
 - `append_research_log.py`: append structured entries to `research_log.md`
 - `research_log.md`: persistent experiment and decision log

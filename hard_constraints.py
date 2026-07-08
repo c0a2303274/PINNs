@@ -82,3 +82,67 @@ class HardNet(nn.Module):
 
     def forward(self, coords: torch.Tensor) -> torch.Tensor:
         return self.projection(self.raw_forward(coords))
+
+
+class NonlinearEqualityProjection(nn.Module):
+    """Differentiable HardNet++-style projection for nonlinear equalities.
+
+    The constraint function must map y with shape (batch, dim) to c(y) with
+    shape (batch, constraints). Each iteration locally linearizes c(y)=0 and
+    applies the minimum-norm correction.
+    """
+
+    def __init__(
+        self,
+        constraint_fn,
+        iterations: int = 5,
+        damping: float = 1.0,
+        ridge: float = 1.0e-6,
+        max_step_norm: float | None = 1.0,
+    ):
+        super().__init__()
+        self.constraint_fn = constraint_fn
+        self.iterations = iterations
+        self.damping = damping
+        self.ridge = ridge
+        self.max_step_norm = max_step_norm
+
+    def forward(self, y: torch.Tensor) -> torch.Tensor:
+        projected = y
+        for _ in range(self.iterations):
+            projected = self._step(projected)
+        return projected
+
+    def violation(self, y: torch.Tensor) -> torch.Tensor:
+        return self.constraint_fn(y)
+
+    def _step(self, y: torch.Tensor) -> torch.Tensor:
+        with torch.enable_grad():
+            y_for_jacobian = y.detach().requires_grad_(True)
+            constraint = self.constraint_fn(y_for_jacobian)
+            jacobian_rows = []
+            for idx in range(constraint.shape[1]):
+                grad = torch.autograd.grad(
+                    outputs=constraint[:, idx].sum(),
+                    inputs=y_for_jacobian,
+                    create_graph=False,
+                    retain_graph=True,
+                )[0]
+                jacobian_rows.append(grad)
+        jacobian = torch.stack(jacobian_rows, dim=1)
+
+        current_constraint = self.constraint_fn(y)
+        jj_t = jacobian @ jacobian.transpose(1, 2)
+        eye = torch.eye(jj_t.shape[1], device=y.device, dtype=y.dtype).unsqueeze(0)
+        rhs = -current_constraint.unsqueeze(2)
+        weights = torch.linalg.solve(jj_t + self.ridge * eye, rhs)
+        correction = (jacobian.transpose(1, 2) @ weights).squeeze(2)
+        if self.max_step_norm is not None:
+            norm = torch.linalg.norm(correction, dim=1, keepdim=True).clamp_min(1.0e-12)
+            scale = torch.clamp(self.max_step_norm / norm, max=1.0)
+            correction = correction * scale
+        return y + self.damping * correction
+
+
+class HardNetPlusPlus(HardNet):
+    """Alias module for networks using a nonlinear constraint projection."""
