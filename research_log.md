@@ -209,3 +209,15 @@
 - W&B run: None
 - Open issue: Need GPU seed 0 integrated result to see whether bounded correction improves L2, PDE residual, or stability
 - Next step: Run the integrated Burgers comparison on GPU for seed 0, then extend the best setting to seeds 0,1,2
+
+## 2026-07-09
+
+- Stage: burgers-diagnostics
+- PDE: 1D viscous Burgers
+- Problem setting: Skip additional seed checks and diagnose why bounded hard-IC/BC failed
+- Methods or changes: Added shock-focused interior sampling and amplitude-2 bounded configurations
+- What was done: Implemented configs bounded_amp2_lbfgs, hard_icbc_focused_lbfgs, bounded_amp2_focused_lbfgs and verified a smoke run
+- Result: Smoke run completed; next GPU run will test whether bounded failure was due to too-small amplitude or insufficient sampling near the steep transition
+- W&B run: None
+- Open issue: Need GPU results to determine whether focused sampling or larger bounded correction improves L2/PDE loss
+- Next step: Run the Burgers diagnostic comparison for seed 0 on GPU

@@ -37,9 +37,25 @@ def parse_dtype(raw_dtype: str) -> torch.dtype:
     raise ValueError(f"unsupported dtype: {raw_dtype}")
 
 
-def sample_interior(n_points: int, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+def sample_interior(
+    n_points: int,
+    device: torch.device,
+    sampling: str = "uniform",
+    focus_fraction: float = 0.5,
+    focus_std: float = 0.2,
+) -> tuple[torch.Tensor, torch.Tensor]:
     t = torch.empty(n_points, 1, device=device).uniform_(0.0, 1.0)
-    x = torch.empty(n_points, 1, device=device).uniform_(-1.0, 1.0)
+    if sampling == "uniform":
+        x = torch.empty(n_points, 1, device=device).uniform_(-1.0, 1.0)
+    elif sampling == "shock-focused":
+        n_focus = int(n_points * focus_fraction)
+        n_uniform = n_points - n_focus
+        x_uniform = torch.empty(n_uniform, 1, device=device).uniform_(-1.0, 1.0)
+        x_focus = torch.randn(n_focus, 1, device=device) * focus_std
+        x_focus = torch.clamp(x_focus, -1.0, 1.0)
+        x = torch.cat([x_uniform, x_focus], dim=0)
+    else:
+        raise ValueError(f"unsupported sampling: {sampling}")
     return t, x
 
 
@@ -67,8 +83,11 @@ def compute_losses(
     nu: float,
     lambda_ic: float,
     lambda_bc: float,
+    sampling: str,
+    focus_fraction: float,
+    focus_std: float,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    t_f, x_f = sample_interior(n_interior, device)
+    t_f, x_f = sample_interior(n_interior, device, sampling=sampling, focus_fraction=focus_fraction, focus_std=focus_std)
     residual = pde_residual(model, t_f, x_f, nu)
     loss_pde = torch.mean(residual**2)
 
@@ -154,6 +173,9 @@ def init_wandb(args: argparse.Namespace, device: torch.device) -> Any:
         "ic_weight": args.lambda_ic,
         "bc_weight": args.lambda_bc,
         "nu": args.nu,
+        "sampling": args.sampling,
+        "focus_fraction": args.focus_fraction,
+        "focus_std": args.focus_std,
         "seed": args.seed,
         "device": str(device),
         "dtype": args.dtype,
@@ -315,6 +337,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lambda-ic", type=float, default=1.0)
     parser.add_argument("--lambda-bc", type=float, default=1.0)
     parser.add_argument("--bound-amplitude", type=float, default=1.0)
+    parser.add_argument("--sampling", choices=["uniform", "shock-focused"], default="uniform")
+    parser.add_argument("--focus-fraction", type=float, default=0.5)
+    parser.add_argument("--focus-std", type=float, default=0.2)
     parser.add_argument("--nu", type=float, default=0.01 / math.pi)
     parser.add_argument("--lbfgs-steps", type=int, default=0)
     parser.add_argument("--lbfgs-lr", type=float, default=1.0)
@@ -377,6 +402,9 @@ def main() -> None:
             nu=args.nu,
             lambda_ic=args.lambda_ic,
             lambda_bc=args.lambda_bc,
+            sampling=args.sampling,
+            focus_fraction=args.focus_fraction,
+            focus_std=args.focus_std,
         )
         total.backward()
         optimizer.step()
@@ -389,7 +417,13 @@ def main() -> None:
 
     lbfgs_completed_steps = 0
     if args.lbfgs_steps > 0:
-        t_f_fixed, x_f_fixed = sample_interior(args.n_interior, device)
+        t_f_fixed, x_f_fixed = sample_interior(
+            args.n_interior,
+            device,
+            sampling=args.sampling,
+            focus_fraction=args.focus_fraction,
+            focus_std=args.focus_std,
+        )
         t_ic_fixed, x_ic_fixed = sample_initial(args.n_initial, device)
         t_bc_fixed, x_bc_fixed = sample_boundary(args.n_boundary, device)
         lbfgs = torch.optim.LBFGS(
@@ -438,6 +472,9 @@ def main() -> None:
         nu=args.nu,
         lambda_ic=args.lambda_ic,
         lambda_bc=args.lambda_bc,
+        sampling=args.sampling,
+        focus_fraction=args.focus_fraction,
+        focus_std=args.focus_std,
     )
     l2_error, _, _, _, _ = evaluate(model, device=device, nu=args.nu, grid_size=args.eval_grid_size)
     save_plots(model, output_dir, device, history, nu=args.nu, grid_size=args.eval_grid_size)
@@ -465,6 +502,9 @@ def main() -> None:
         "lambda_ic": args.lambda_ic,
         "lambda_bc": args.lambda_bc,
         "bound_amplitude": args.bound_amplitude,
+        "sampling": args.sampling,
+        "focus_fraction": args.focus_fraction,
+        "focus_std": args.focus_std,
         "nu": args.nu,
         "lbfgs_steps": args.lbfgs_steps,
         "completed_lbfgs_steps": lbfgs_completed_steps,

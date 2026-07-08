@@ -58,6 +58,12 @@ hard_icbc_lbfgs: exact IC/BC + PDE residual loss
 bounded_hard_icbc_lbfgs: exact IC/BC + bounded correction + PDE residual loss
 ```
 
+The first bounded result was worse, likely because the bounded correction was too restrictive. The next diagnostic run tests a larger bound and shock-focused interior sampling:
+
+```bash
+python run_burgers_integrated_comparison.py --configs bounded_amp2_lbfgs,hard_icbc_focused_lbfgs,bounded_amp2_focused_lbfgs --seeds 0 --runtime-sec 7200 --epochs 1000000 --n-interior 4096 --n-initial 512 --n-boundary 512 --hidden-dim 128 --hidden-layers 5 --wandb-mode offline --output-root outputs/burgers_integrated_diagnostic_seed0
+```
+
 ## Immediate GPU command
 
 Run this next on the research GPU:

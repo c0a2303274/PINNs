@@ -36,6 +36,31 @@ CONFIGS = {
         "lr": 1.0e-3,
         "lbfgs_steps": 50000,
         "adam_fraction": 0.5,
+        "bound_amplitude": 1.0,
+        "sampling": "uniform",
+    },
+    "bounded_amp2_lbfgs": {
+        "constraint_mode": "bounded-hard-icbc",
+        "lr": 1.0e-3,
+        "lbfgs_steps": 50000,
+        "adam_fraction": 0.5,
+        "bound_amplitude": 2.0,
+        "sampling": "uniform",
+    },
+    "hard_icbc_focused_lbfgs": {
+        "constraint_mode": "hard-icbc",
+        "lr": 1.0e-3,
+        "lbfgs_steps": 50000,
+        "adam_fraction": 0.5,
+        "sampling": "shock-focused",
+    },
+    "bounded_amp2_focused_lbfgs": {
+        "constraint_mode": "bounded-hard-icbc",
+        "lr": 1.0e-3,
+        "lbfgs_steps": 50000,
+        "adam_fraction": 0.5,
+        "bound_amplitude": 2.0,
+        "sampling": "shock-focused",
     },
 }
 
@@ -78,7 +103,13 @@ def run_one(args: argparse.Namespace, config_name: str, seed: int, output_dir: P
         "--lambda-bc",
         str(args.lambda_bc),
         "--bound-amplitude",
-        str(args.bound_amplitude),
+        str(config.get("bound_amplitude", args.bound_amplitude)),
+        "--sampling",
+        str(config.get("sampling", args.sampling)),
+        "--focus-fraction",
+        str(args.focus_fraction),
+        "--focus-std",
+        str(args.focus_std),
         "--nu",
         str(args.nu),
         "--lbfgs-steps",
@@ -153,6 +184,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lambda-ic", type=float, default=1.0)
     parser.add_argument("--lambda-bc", type=float, default=1.0)
     parser.add_argument("--bound-amplitude", type=float, default=1.0)
+    parser.add_argument("--sampling", choices=["uniform", "shock-focused"], default="uniform")
+    parser.add_argument("--focus-fraction", type=float, default=0.5)
+    parser.add_argument("--focus-std", type=float, default=0.2)
     parser.add_argument("--nu", type=float, default=0.01 / 3.141592653589793)
     parser.add_argument("--wandb-mode", choices=["online", "offline", "disabled"], default="offline")
     parser.add_argument("--output-root", type=Path, default=Path("outputs/burgers_integrated_comparison"))
