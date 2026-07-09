@@ -1,0 +1,3 @@
+config_name,constraint_mode,seed,l2_relative_error,final_pde_loss,final_ic_loss,final_bc_loss,runtime_sec,completed_epochs,completed_lbfgs_steps
+bounded_amp2_lbfgs,bounded-hard-icbc,0,0.039952393621206284,0.0648731216788292,0.0,2.496340350280563e-15,3824.645243883133,361371,12034
+hard_icbc_focused_lbfgs,hard-icbc,0,0.0429157055914402,9.530235729471315e-06,0.0,2.558454123335668e-15,3602.66672873497,370258,108
