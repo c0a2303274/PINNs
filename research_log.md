@@ -221,3 +221,15 @@
 - W&B run: None
 - Open issue: Need GPU results to determine whether focused sampling or larger bounded correction improves L2/PDE loss
 - Next step: Run the Burgers diagnostic comparison for seed 0 on GPU
+
+## 2026-07-16
+
+- Stage: burgers-advisor-feedback
+- PDE: 1D and 2D Burgers
+- Problem setting: Revise Burgers direction based on advisor feedback: use representative shock solutions instead of only -sin(pi x), and touch 2D Burgers
+- Methods or changes: Added analytic traveling shock problem, shock PINN trainer, 2D Burgers residual scaffold, and feedback plan
+- What was done: Implemented burgers_shock_problem.py, train_burgers_shock_pinn.py, burgers2d_problem.py, and verified a short hard-IC/BC shock smoke run
+- Result: Shock smoke run completed with exact IC/BC losses equal to zero and analytic-reference L2 output generated
+- W&B run: None
+- Open issue: Need GPU run for the analytic shock setup and a concrete 2D Burgers reference/IC/BC choice
+- Next step: Run the 1D analytic shock hard-IC/BC GPU experiment, then define the 2D Burgers manufactured or numerical reference problem
