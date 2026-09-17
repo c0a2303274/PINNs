@@ -138,7 +138,10 @@ class NonlinearEqualityProjection(nn.Module):
         weights = torch.linalg.solve(jj_t + self.ridge * eye, rhs)
         correction = (jacobian.transpose(1, 2) @ weights).squeeze(2)
         if self.max_step_norm is not None:
-            norm = torch.linalg.norm(correction, dim=1, keepdim=True).clamp_min(1.0e-12)
+            # The clipping factor is a numerical safeguard, not a trainable
+            # quantity. Detaching it avoids undefined higher derivatives of
+            # the vector norm when a converged correction is exactly zero.
+            norm = torch.linalg.norm(correction.detach(), dim=1, keepdim=True).clamp_min(1.0e-12)
             scale = torch.clamp(self.max_step_norm / norm, max=1.0)
             correction = correction * scale
         return y + self.damping * correction

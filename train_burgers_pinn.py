@@ -244,6 +244,38 @@ def evaluate(model: MLP, device: torch.device, nu: float, grid_size: int = 101) 
     )
 
 
+def measure_inference(
+    model: torch.nn.Module,
+    device: torch.device,
+    grid_size: int,
+    repeats: int,
+) -> tuple[float, float]:
+    t_grid = torch.linspace(0.0, 1.0, grid_size, device=device)
+    x_grid = torch.linspace(-1.0, 1.0, grid_size, device=device)
+    tt, xx = torch.meshgrid(t_grid, x_grid, indexing="ij")
+    coords = torch.stack([tt.reshape(-1), xx.reshape(-1)], dim=1)
+    was_training = model.training
+    model.eval()
+
+    with torch.no_grad():
+        for _ in range(5):
+            model(coords)
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+        start = time.perf_counter()
+        for _ in range(repeats):
+            model(coords)
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+
+    elapsed = time.perf_counter() - start
+    if was_training:
+        model.train()
+    milliseconds = elapsed * 1000.0 / repeats
+    points_per_second = coords.shape[0] * repeats / elapsed
+    return milliseconds, points_per_second
+
+
 def save_history_csv(history: dict[str, list[float]], path: Path) -> None:
     with path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
@@ -349,6 +381,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--dtype", choices=["float32", "float64"], default="float32")
     parser.add_argument("--eval-grid-size", type=int, default=101)
+    parser.add_argument("--inference-repeats", type=int, default=50)
     parser.add_argument("--print-every", type=int, default=500)
     parser.add_argument("--wandb-mode", choices=["online", "offline", "disabled"], default=os.getenv("WANDB_MODE", "offline"))
     parser.add_argument("--wandb-project", type=str, default="pinns-thesis")
@@ -378,6 +411,9 @@ def main() -> None:
         ).to(device=device, dtype=dtype)
     else:
         model = MLP(in_dim=2, hidden_dim=args.hidden_dim, hidden_layers=args.hidden_layers, out_dim=1).to(device=device, dtype=dtype)
+    parameter_count = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     run = init_wandb(args, device)
     history = {"total": [], "pde": [], "ic": [], "bc": []}
@@ -478,6 +514,17 @@ def main() -> None:
     )
     l2_error, _, _, _, _ = evaluate(model, device=device, nu=args.nu, grid_size=args.eval_grid_size)
     save_plots(model, output_dir, device, history, nu=args.nu, grid_size=args.eval_grid_size)
+    inference_time_ms, inference_points_per_sec = measure_inference(
+        model,
+        device=device,
+        grid_size=args.eval_grid_size,
+        repeats=args.inference_repeats,
+    )
+    peak_gpu_mem_mb = (
+        torch.cuda.max_memory_allocated(device) / (1024**2)
+        if device.type == "cuda"
+        else None
+    )
 
     model_path = output_dir / "model.pt"
     metrics_path = output_dir / "metrics.json"
@@ -498,6 +545,7 @@ def main() -> None:
         "n_boundary": args.n_boundary,
         "hidden_dim": args.hidden_dim,
         "hidden_layers": args.hidden_layers,
+        "parameter_count": parameter_count,
         "lr": args.lr,
         "lambda_ic": args.lambda_ic,
         "lambda_bc": args.lambda_bc,
@@ -512,6 +560,10 @@ def main() -> None:
         "device": str(device),
         "dtype": args.dtype,
         "eval_grid_size": args.eval_grid_size,
+        "inference_repeats": args.inference_repeats,
+        "inference_time_ms": inference_time_ms,
+        "inference_points_per_sec": inference_points_per_sec,
+        "peak_gpu_mem_mb": peak_gpu_mem_mb,
         "runtime_sec": elapsed,
         "l2_relative_error": l2_error,
         "final_total_loss": float(final_total.item()),
@@ -526,6 +578,9 @@ def main() -> None:
     if run is not None:
         run.summary["runtime_sec"] = elapsed
         run.summary["l2_relative_error"] = l2_error
+        run.summary["parameter_count"] = parameter_count
+        run.summary["inference_time_ms"] = inference_time_ms
+        run.summary["peak_gpu_mem_mb"] = peak_gpu_mem_mb
         run.summary["output_dir"] = str(output_dir.resolve())
         log_wandb_metrics(run, args.epochs + args.lbfgs_steps, final_total, final_loss_pde, final_loss_ic, final_loss_bc, l2_error=l2_error)
         run.log_artifact(str(model_path), name=f"{args.wandb_group}-model-seed{args.seed}", type="model")

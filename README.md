@@ -27,6 +27,7 @@ The project is shifting from Poisson-only PINNs tuning to hard-constrained neura
 - `run_burgers_constraint_comparison.py`: run soft PINNs vs hard IC/BC Burgers comparisons
 - `run_burgers_fast_track.py`: run promising Burgers hard-IC/BC configs before the next seminar
 - `run_burgers_integrated_comparison.py`: compare soft, hard-IC/BC, and bounded hard-IC/BC Burgers models
+- `run_burgers_architecture_ablation.py`: compare network width, depth, and collocation counts without mixing variables
 - `nonlinear_pde_next_steps.md`: current nonlinear PDE plan and first experiment commands
 - `hard_constraints.py`: HardNet-style affine equality projection utility
 - `smoke_hardnet_projection.py`: smoke test for projection accuracy and gradient flow
@@ -35,6 +36,10 @@ The project is shifting from Poisson-only PINNs tuning to hard-constrained neura
 - `run_hardnet_vector_comparison.py`: timed comparison runner for vector-field soft vs HardNet experiments
 - `train_hardnetpp_circle_demo.py`: HardNet++-style nonlinear equality demo on a unit-circle constraint
 - `run_hardnetpp_circle_comparison.py`: timed comparison runner for soft MLP vs HardNet++ nonlinear constraints
+- `transport_constraint_problem.py`: analytic two-component periodic transport PDE used to bridge constraint layers to PDE training
+- `train_transport_constraint_pinn.py`: train Soft, HardNet, or HardNet++ models on the transport PDE
+- `run_transport_constraint_comparison.py`: compare linear HardNet and nonlinear HardNet++ constraints in the PDE setting
+- `smoke_transport_constraints.py`: verify exact residuals, hard constraints, and finite PDE gradients
 - `hardnet_transition_plan.md`: plan for moving from the hard IC/BC ansatz to HardNet/HardNet++
 - `append_research_log.py`: append structured entries to `research_log.md`
 - `research_log.md`: persistent experiment and decision log
@@ -51,6 +56,32 @@ The Poisson experiments showed that standard PINNs can be improved by Adam->L-BF
 ## Local run
 
 Default W&B behavior is offline logging. That keeps runs local unless you later sync them.
+
+### Burgers architecture ablation
+
+Run a seed-0 pilot that changes width, depth, and collocation count separately:
+
+```powershell
+python .\run_burgers_architecture_ablation.py --study all --seeds 0 --runtime-sec 600 --device cuda --wandb-mode disabled --output-root .\outputs\burgers_architecture_pilot
+```
+
+The default matrix uses widths `32,64,128,256`, depths `3,5,8`, and interior counts `1024,4096,16384`. Duplicate baseline configurations are run once. The summary includes parameter count, L2 relative error, PDE loss, runtime, completed epochs, peak GPU memory, and inference time.
+
+After selecting candidates, repeat only those settings with three seeds. For example:
+
+```powershell
+python .\run_burgers_architecture_ablation.py --study width --widths 64,128 --seeds 0,1,2 --runtime-sec 1200 --device cuda --wandb-mode disabled --output-root .\outputs\burgers_width_confirm
+```
+
+### HardNet and HardNet++ PDE bridge
+
+Run the analytic periodic transport benchmark. The linear case compares Soft constraints with HardNet for `y0+y1=0`; the circle case compares Soft constraints with HardNet++ for `y0^2+y1^2=1`.
+
+```powershell
+python .\run_transport_constraint_comparison.py --seeds 0 --runtime-sec 1800 --hidden-dim 64 --hidden-layers 3 --device cuda --wandb-mode disabled --output-root .\outputs\transport_constraint_pilot
+```
+
+`--runtime-sec` is a per-method budget. The command above runs four methods and therefore has an upper bound of about two hours. This benchmark verifies PDE integration of the constraint layers; it does not by itself establish effectiveness on nonlinear Burgers equations.
 
 Adam only:
 
