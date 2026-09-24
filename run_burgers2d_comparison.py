@@ -1,4 +1,4 @@
-"""Run the 2x2 width/time matrix sequentially on one GPU."""
+"""Run width/time cases A-D or time-allocation cases C,E sequentially on one GPU."""
 
 import argparse
 import json
@@ -8,12 +8,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from train_burgers2d_pinn import save_json, widths_arg, write_csv
+from train_burgers2d_pinn import save_json, training_budgets, widths_arg, write_csv
 
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--cases", default="A,B,C,D")
+    p.add_argument("--cases", default="A,B,C,D", help="A-D: original matrix; C,E: equal vs front-loaded time budgets")
+    p.add_argument("--first-window-fraction", type=float, default=0.5, help="case E only; C keeps equal budgets")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--runtime-sec", type=float, default=600, help="TOTAL training seconds PER CASE, not per window")
     p.add_argument("--epochs", type=int, default=1_000_000, help="TOTAL update cap PER CASE")
@@ -34,24 +35,30 @@ def parse_args(argv=None):
     p.add_argument("--share-dir", type=Path, help="optional NEW directory for small Git-shareable outputs only")
     args = p.parse_args(argv)
     args.cases = [x.strip().upper() for x in args.cases.split(",")]
-    if not args.cases or len(set(args.cases)) != len(args.cases) or any(c not in "ABCD" or len(c) != 1 for c in args.cases):
-        p.error("--cases must contain unique case letters A,B,C,D")
+    if not args.cases or len(set(args.cases)) != len(args.cases) or any(c not in "ABCDE" or len(c) != 1 for c in args.cases):
+        p.error("--cases must contain unique case letters A,B,C,D,E")
     if not math.isfinite(args.runtime_sec) or args.runtime_sec <= 0:
         p.error("runtime must be positive and finite")
     if min(args.epochs, args.n_interior, args.n_initial, args.n_boundary, args.eval_residual_points, args.inference_repeats) < 1:
         p.error("counts must be positive")
     if args.windows < 2 or args.epochs < args.windows or args.eval_grid_size < 4 or args.eval_times < 2 or args.seed < 0:
         p.error("require windows>=2, epochs>=windows, grid>=4, eval-times>=2, seed>=0")
+    try:
+        training_budgets("marching", args.windows, args.runtime_sec, args.first_window_fraction)
+    except ValueError as exc:
+        p.error(str(exc))
     return args
 
 
 def summary(rows, root):
     write_csv(root / "summary.csv", rows)
-    columns = ["case", "mode", "hidden_widths", "parameter_count_per_model", "l2_relative_error",
+    columns = ["case", "mode", "hidden_widths", "window_budgets_sec", "parameter_count_per_model", "l2_relative_error",
+               "initial_time_l2_relative_error", "final_time_l2_relative_error",
                "fluctuation_l2_relative_error", "pde_rmse", "ic_rmse", "max_interface_rmse",
                "training_sec", "completed_epochs", "inference_time_ms"]
-    lines = ["# 2D Burgers width/time comparison", "", "Pilot, seed 0 by default; one trial is not a robustness result.",
+    lines = ["# 2D Burgers width/time/allocation comparison", "", "Pilot, seed 0 by default; one trial is not a robustness result.",
              "Same total training-loop budget per case. Different widths have different parameter counts.",
+             "C: equal window budgets; E: extra first-window time, less time for later windows (same width as C).",
              "Fluctuation error uses the reference minus its uniform background in the denominator.", "",
              "| " + " | ".join(columns) + " |", "|" + "---|" * len(columns)]
     for row in rows:
@@ -75,7 +82,7 @@ def run(args):
     rows, commands = [], []
     print(f"{len(args.cases)} cases, training budget {len(args.cases)*args.runtime_sec/60:.1f} min total + setup/evaluation", flush=True)
     for case in args.cases:
-        widths = args.uniform_widths if case in "AC" else args.variable_widths
+        widths = args.uniform_widths if case in "ACE" else args.variable_widths
         mode = "global" if case in "AB" else "marching"
         name = f"{case}_{mode}_seed{args.seed}"
         dest = root / name
@@ -84,13 +91,18 @@ def run(args):
         for key in ["seed", "runtime_sec", "epochs", "windows", "n_interior", "n_initial", "n_boundary",
                     "eval_grid_size", "eval_times", "eval_residual_points", "inference_repeats", "device", "dtype", "wandb_mode"]:
             command += ["--" + key.replace("_", "-"), str(getattr(args, key))]
+        if case == "E":
+            command += ["--first-window-fraction", str(args.first_window_fraction)]
         commands.append({"case": case, "command": command})
         save_json(root / "commands.json", commands)
-        print(f"Starting {name}: {widths}", flush=True)
+        budgets = training_budgets(mode, args.windows, args.runtime_sec,
+                                   args.first_window_fraction if case == "E" else None)
+        print(f"Starting {name}: {widths}, window budgets {budgets} seconds", flush=True)
         subprocess.run(command, check=True)
         metrics = json.loads((dest / "metrics.json").read_text(encoding="utf-8"))
         row = {"case": case, **metrics, "hidden_widths": ",".join(map(str, widths)),
-               "edges": json.dumps(metrics["edges"])}
+               "edges": json.dumps(metrics["edges"]),
+               "window_budgets_sec": json.dumps(metrics["window_budgets_sec"])}
         rows.append(row)
         summary(rows, root)
         if args.share_dir:

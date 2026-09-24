@@ -40,6 +40,8 @@ def parse_args(argv=None):
     p.add_argument("--hidden-widths", type=widths_arg, default=widths_arg("128,128,128,128,128"))
     p.add_argument("--windows", type=int, default=5, help="used only in marching mode")
     p.add_argument("--runtime-sec", type=float, default=600, help="total training-loop budget, shared across windows")
+    p.add_argument("--first-window-fraction", type=float,
+                   help="marching only: fraction of total runtime for the first slab; remainder split equally")
     p.add_argument("--epochs", type=int, default=1_000_000, help="total update cap, shared across windows")
     p.add_argument("--n-interior", type=int, default=1024)
     p.add_argument("--n-initial", type=int, default=256)
@@ -78,10 +80,31 @@ def parse_args(argv=None):
     if args.mode == "marching" and (args.windows < 2 or args.epochs < args.windows):
         p.error("marching needs windows >= 2 and total epochs >= windows")
     try:
+        training_budgets(args.mode, args.windows, args.runtime_sec, args.first_window_fraction)
+    except ValueError as exc:
+        p.error(str(exc))
+    try:
         Problem(args.nu, args.amplitude, args.speed_x, args.speed_y, args.t_final)
     except ValueError as exc:
         p.error(str(exc))
     return args
+
+
+def training_budgets(mode, windows, runtime_sec, first_fraction=None):
+    if not math.isfinite(runtime_sec) or runtime_sec <= 0:
+        raise ValueError("runtime must be finite and positive")
+    if mode == "global":
+        if first_fraction is not None:
+            raise ValueError("--first-window-fraction requires marching mode")
+        return [runtime_sec]
+    if mode != "marching" or windows < 2:
+        raise ValueError("marching requires at least two windows")
+    if first_fraction is None:
+        return [runtime_sec / windows] * windows
+    if not math.isfinite(first_fraction) or not 0 < first_fraction < 1:
+        raise ValueError("--first-window-fraction must be finite and strictly between 0 and 1")
+    first = runtime_sec * first_fraction
+    return [first] + [(runtime_sec - first) / (windows - 1)] * (windows - 1)
 
 
 def sync(device):
@@ -117,6 +140,7 @@ def provenance():
 
 def train_slabs(args, problem, device, dtype, output, tracker=None):
     count = args.windows if args.mode == "marching" else 1
+    budgets = training_budgets(args.mode, args.windows, args.runtime_sec, args.first_window_fraction)
     edges = np.linspace(0, problem.t_final, count + 1).tolist()
     models, summaries, history = [], [], []
     samples = torch.Generator(device=device).manual_seed(args.seed + 10_000)
@@ -131,7 +155,7 @@ def train_slabs(args, problem, device, dtype, output, tracker=None):
             optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
             initial = sample_points(args.n_initial, start, start, device, dtype, samples)
             target = handoff_target(previous, initial, problem)
-            budget = args.runtime_sec / count
+            budget = budgets[index]
             cap = args.epochs // count + int(index < args.epochs % count)
             sync(device)
             begun = time.perf_counter()
@@ -224,6 +248,7 @@ def evaluate(models, edges, problem, args, device, dtype, output):
                "l2_u": relative_error(error[..., 0], reference[..., 0]),
                "l2_v": relative_error(error[..., 1], reference[..., 1]),
                "fluctuation_l2_relative_error": relative_error(error, reference - background.cpu()),
+               "initial_time_l2_relative_error": rows[0]["l2_relative_error"],
                "final_time_l2_relative_error": rows[-1]["l2_relative_error"],
                "max_abs_error": error.abs().max().item()}
     generator = torch.Generator(device=device).manual_seed(args.seed + 90_000)
@@ -327,6 +352,7 @@ def run(args):
     dtype = getattr(torch, args.dtype)
     problem = Problem(args.nu, args.amplitude, args.speed_x, args.speed_y, args.t_final)
     config = {**vars(args), "output_dir": str(output), "actual_device": str(device), "problem": asdict(problem),
+              "window_budgets_sec": training_budgets(args.mode, args.windows, args.runtime_sec, args.first_window_fraction),
               "torch_version": str(torch.__version__), "python_version": platform.python_version(),
               "device_name": torch.cuda.get_device_name(device) if device.type == "cuda" else platform.processor(),
               "constraint_mode": "soft-periodic-value-and-gradient", **provenance()}
@@ -347,6 +373,8 @@ def run(args):
                         "model_count": len(models), "training_sec": sum(s["training_sec"] for s in slabs),
                         "completed_epochs": sum(s["completed_epochs"] for s in slabs),
                         "runtime_budget_sec": args.runtime_sec, "edges": edges,
+                        "first_window_fraction": args.first_window_fraction,
+                        "window_budgets_sec": [s["budget_sec"] for s in slabs],
                         "peak_gpu_mem_mb": torch.cuda.max_memory_allocated(device) / 2**20 if device.type == "cuda" else None,
                         "wall_sec": time.perf_counter() - started})
         fig, ax = plt.subplots(figsize=(8, 4), constrained_layout=True)

@@ -110,6 +110,53 @@ Existing nonempty output directories are rejected to avoid mixing experiments.
 Automatic resume is not implemented. Use a new run name for another run.
 CUDA requested but unavailable raises an error instead of silently using CPU.
 
+## Follow-up: first-window time allocation
+
+The pilot `results/burgers2d_pilot_20260924_182901/` shows that C already has
+a larger error at t=0 (0.112817 vs A's 0.025677). In C's first slab, sampled
+IC loss falls from 0.004109 at 89.75 s to 0.002046 at 120.01 s. These are
+pre-update training losses, not held-out RMSE. This motivates a time-allocation
+test; it does not prove insufficient runtime is the only cause.
+
+Run C and E together on the same GPU, sequentially:
+
+| Case | First slab | Each of remaining 4 slabs | Total training |
+|---|---:|---:|---:|
+| C (control) | 120 s | 120 s | 600 s |
+| E (front-loaded) | 300 s | 75 s | 600 s |
+
+Both keep 128x5 hidden widths, 5 equal physical-time windows, seed 0, all
+sampling counts, loss weights, Adam settings, local time normalization and
+teacher handoff unchanged. Only training-time allocation changes. Epoch caps
+remain split equally (200000/window by default); verify `stop_reason` is
+`time_budget`. This tests allocation, not extra total compute, and can harm
+later windows by reducing their time. Same seed does not imply identical
+later-window samples: sampling uses a continuing RNG and update counts differ.
+
+```bash
+conda activate pinns
+RUN_ID=$(date +%Y%m%d_%H%M%S)
+python run_burgers2d_comparison.py --cases C,E --runtime-sec 600 --device cuda --output-root "outputs/burgers2d_allocation_${RUN_ID}" --share-dir "results/burgers2d_allocation_${RUN_ID}"
+```
+
+Expected training time: **20 minutes total**, plus setup/evaluation. Use tmux
+as described above if disconnecting. Original A-D defaults remain unchanged.
+`--first-window-fraction 0.5` is E's default; C always uses equal allocation.
+The trainer itself also accepts this flag, but only in marching mode.
+
+Check initial-time L2/held-out IC RMSE first, then full-time L2, fluctuation
+error, terminal error and interface jumps. An initial improvement with worse
+terminal error is a tradeoff, not an overall success. If initial accuracy does
+not improve, do not blindly extend runtime; investigate losses and scaling.
+Use `window_budgets_sec` in config/metrics/summary and `slabs.json` for auditing.
+One seed is a diagnostic, not a robustness claim.
+
+```bash
+git add "results/burgers2d_allocation_${RUN_ID}"
+git commit -m "Add 2D Burgers time-allocation comparison results"
+git push origin main
+```
+
 ## Artifacts and sharing
 
 `outputs/burgers2d_pilot/` contains `summary.csv`, `summary.md`, commands and

@@ -1,3 +1,6 @@
+import contextlib
+import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,7 +13,8 @@ from burgers2d_benchmark import (
     periodic_pairs, predict_piecewise, residual, sample_points, slab_index,
 )
 from pinn_model import MLP
-from train_burgers2d_pinn import load_checkpoint, parse_args, run
+from train_burgers2d_pinn import load_checkpoint, parse_args, run, training_budgets
+from run_burgers2d_comparison import parse_args as comparison_args
 
 
 class Constant(nn.Module):
@@ -126,6 +130,56 @@ class Burgers2DTests(unittest.TestCase):
             self.assertTrue(torch.isfinite(predict_piecewise(models, [0, .5, 1], pts)).all())
             with self.assertRaises(FileExistsError):
                 run(args)
+
+    def test_time_allocation_budgets(self):
+        self.assertEqual(training_budgets("global", 5, 600), [600])
+        self.assertEqual(training_budgets("marching", 5, 600), [120] * 5)
+        self.assertEqual(training_budgets("marching", 5, 600, .5), [300, 75, 75, 75, 75])
+        for count in (2, 3, 5, 7):
+            budgets = training_budgets("marching", count, 600, .4)
+            self.assertEqual(len(budgets), count)
+            self.assertTrue(all(b > 0 for b in budgets))
+            self.assertAlmostEqual(sum(budgets), 600)
+        for fraction in (0, 1, -.1, 1.1, float("nan"), float("inf")):
+            with self.assertRaises(ValueError):
+                training_budgets("marching", 5, 600, fraction)
+        with self.assertRaises(ValueError):
+            training_budgets("global", 5, 600, .5)
+
+    def test_time_allocation_cli(self):
+        self.assertIsNone(parse_args([]).first_window_fraction)
+        self.assertEqual(comparison_args([]).cases, ["A", "B", "C", "D"])
+        args = comparison_args(["--cases", "C,E"])
+        self.assertEqual(args.cases, ["C", "E"])
+        self.assertEqual(args.first_window_fraction, .5)
+        for argv in (["--first-window-fraction", ".5"],
+                     ["--mode", "marching", "--first-window-fraction", "nan"]):
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                parse_args(argv)
+        for argv in (["--cases", "E,E"], ["--cases", "F"], ["--first-window-fraction", "1"]):
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                comparison_args(argv)
+
+    def test_frontloaded_training_records_budget(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "run"
+            args = parse_args(["--mode", "marching", "--windows", "3", "--epochs", "6",
+                               "--first-window-fraction", ".5", "--runtime-sec", "60",
+                               "--hidden-widths", "8,8", "--n-interior", "8", "--n-initial", "8",
+                               "--n-boundary", "4", "--eval-grid-size", "4", "--eval-times", "3",
+                               "--eval-residual-points", "8", "--inference-repeats", "1",
+                               "--device", "cpu", "--output-dir", str(out)])
+            metrics = run(args)
+            config = json.loads((out / "config.json").read_text())
+            slabs = json.loads((out / "slabs.json").read_text())
+            for budgets in (config["window_budgets_sec"], metrics["window_budgets_sec"],
+                            [s["budget_sec"] for s in slabs]):
+                self.assertEqual(budgets, [30, 15, 15])
+            self.assertEqual([s["epoch_cap"] for s in slabs], [2, 2, 2])
+            self.assertEqual([s["initial_target"] for s in slabs],
+                             ["analytic", "previous_prediction", "previous_prediction"])
+            self.assertEqual(metrics["completed_epochs"], 6)
+            self.assertTrue(torch.isfinite(torch.tensor(metrics["initial_time_l2_relative_error"])))
 
 
 if __name__ == "__main__":
