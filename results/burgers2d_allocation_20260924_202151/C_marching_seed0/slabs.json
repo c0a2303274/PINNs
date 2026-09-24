@@ -1,0 +1,57 @@
+[
+  {
+    "slab": 0,
+    "start": 0.0,
+    "end": 0.2,
+    "completed_epochs": 4087,
+    "training_sec": 120.0082863047719,
+    "budget_sec": 120.0,
+    "epoch_cap": 200000,
+    "stop_reason": "time_budget",
+    "initial_target": "analytic"
+  },
+  {
+    "slab": 1,
+    "start": 0.2,
+    "end": 0.4,
+    "completed_epochs": 4127,
+    "training_sec": 120.00383058935404,
+    "budget_sec": 120.0,
+    "epoch_cap": 200000,
+    "stop_reason": "time_budget",
+    "initial_target": "previous_prediction"
+  },
+  {
+    "slab": 2,
+    "start": 0.4,
+    "end": 0.6000000000000001,
+    "completed_epochs": 4133,
+    "training_sec": 120.01629308611155,
+    "budget_sec": 120.0,
+    "epoch_cap": 200000,
+    "stop_reason": "time_budget",
+    "initial_target": "previous_prediction"
+  },
+  {
+    "slab": 3,
+    "start": 0.6000000000000001,
+    "end": 0.8,
+    "completed_epochs": 4060,
+    "training_sec": 120.02346751466393,
+    "budget_sec": 120.0,
+    "epoch_cap": 200000,
+    "stop_reason": "time_budget",
+    "initial_target": "previous_prediction"
+  },
+  {
+    "slab": 4,
+    "start": 0.8,
+    "end": 1.0,
+    "completed_epochs": 4021,
+    "training_sec": 120.00481412932277,
+    "budget_sec": 120.0,
+    "epoch_cap": 200000,
+    "stop_reason": "time_budget",
+    "initial_target": "previous_prediction"
+  }
+]
