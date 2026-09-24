@@ -1,0 +1,13 @@
+[
+  {
+    "slab": 0,
+    "start": 0.0,
+    "end": 1.0,
+    "completed_epochs": 18736,
+    "training_sec": 600.0144586339593,
+    "budget_sec": 600.0,
+    "epoch_cap": 1000000,
+    "stop_reason": "time_budget",
+    "initial_target": "analytic"
+  }
+]

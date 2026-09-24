@@ -1,0 +1,37 @@
+{
+  "l2_relative_error": 0.015417558141052723,
+  "l2_u": 0.009503655135631561,
+  "l2_v": 0.028554590418934822,
+  "fluctuation_l2_relative_error": 0.14761854708194733,
+  "final_time_l2_relative_error": 0.01512802205979824,
+  "max_abs_error": 0.07037599384784698,
+  "pde_rmse": 0.0071712123464661185,
+  "bc_rmse": 0.0052758739329874516,
+  "bc_gradient_rmse": 0.010138984769582748,
+  "ic_rmse": 0.010720123536884785,
+  "max_interface_rmse": 0.0,
+  "inference_time_ms": 1.192052848637104,
+  "inference_points": 2304,
+  "status": "complete",
+  "mode": "global",
+  "seed": 0,
+  "hidden_widths": [
+    128,
+    128,
+    128,
+    128,
+    128
+  ],
+  "parameter_count_per_model": 66818,
+  "stored_parameter_count": 66818,
+  "model_count": 1,
+  "training_sec": 600.0144586339593,
+  "completed_epochs": 18736,
+  "runtime_budget_sec": 600.0,
+  "edges": [
+    0.0,
+    1.0
+  ],
+  "peak_gpu_mem_mb": 95.072265625,
+  "wall_sec": 603.1708101592958
+}
