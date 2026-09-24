@@ -2,6 +2,22 @@
 
 This directory is the working repository for the staged PINNs thesis workflow.
 
+## New: 2D Burgers baseline (2026-09-24)
+
+See [BURGERS2D.md](BURGERS2D.md) for the locked analytic problem, variable-width
+fully connected MLPs, the four-case global/time-marching comparison, tests and
+GPU commands. The existing 1D models remain compatible. This new baseline uses
+Soft initial/periodic conditions, not HardNet++ or convolutional layers.
+
+```bash
+python -m unittest -v test_burgers2d
+python run_burgers2d_comparison.py --runtime-sec 600 --device cuda --output-root outputs/burgers2d_pilot --share-dir results/burgers2d_pilot
+```
+
+This pilot allocates 600 seconds per case (about 40 minutes for four cases,
+plus evaluation). Sequential cases split their 600 seconds across all windows.
+CPU smoke tests verify implementation, not solution accuracy or GPU execution.
+
 ## Current scope
 
 The project is shifting from Poisson-only PINNs tuning to hard-constrained neural methods for nonlinear PDEs.
